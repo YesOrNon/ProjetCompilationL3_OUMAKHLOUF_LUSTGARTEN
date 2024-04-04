@@ -4,7 +4,7 @@ LUSTGARTEN Leo | OUMAKHLOUF Selym */
 
 #include <stdio.h>
 #include <string.h>
-#include "../src/tree.h"
+#include "../src/Symbols_Table.h"
 
 int yylex(void);
 void yyerror(char* s);
@@ -102,7 +102,8 @@ EnTeteFonct:
                                         }
     |  VOID IDENT '(' Parametres ')' {
                                     $$ = makeNode(heading);
-                                    addChild($$, makeNode(vide));
+                                    addChild($$, node = makeNode(vide));
+                                    strcpy(node->data.comp, "void");
                                     addChild($$, node = makeNode(ident));
                                     strcpy(node->data.ident, $2);
                                     addChild($$, $4);
@@ -337,6 +338,11 @@ int main(int argc, char* argv[]){
     }
     error = yyparse();
     if (treeOption && !error) printTree(arbre);
+    Program_Table * S = init_Program_table();
+    treeToSymbol(arbre, S);
+    print_program_table(S);
+    free_Program_table(S);
+    deleteTree(arbre);
     return error;
 }
 

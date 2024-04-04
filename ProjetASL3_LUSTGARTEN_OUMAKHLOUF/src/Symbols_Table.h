@@ -1,13 +1,15 @@
 #ifndef __SYM__
 #define __SYM__
 
-#define INIT_SIZE 2048
+#include "tree.h"
+
+#define INIT_SIZE 128 // Constante raisonable 
 
 typedef enum Type
 {
     INT,
     CHAR,
-    VOID,
+    VOID_,
     DEFAULT
 } Type;
 
@@ -23,7 +25,7 @@ typedef struct Symbol
 
 typedef struct Symbols_Table
 {
-    Symbol* tab[INIT_SIZE];     /* array of symbols */
+    Symbol tab[INIT_SIZE];     /* array of symbols */
     long int index;             /* index of the next symbol */
 } Symbols_Table;
 
@@ -31,7 +33,7 @@ typedef struct Symbols_Table
 typedef struct Function_Table
 {
     char* ident;                    /* name of the function */
-    Type type_ret;
+    Type type_ret;                  /* type */
     Symbols_Table* header;          /* parameters */
     Symbols_Table* body;            /* local variables */
     struct Function_Table* next;    /* next function */
@@ -56,7 +58,7 @@ char* type_to_string(Type type);
 int get_last_adress(Symbols_Table* sym_table);
 
 /* Create a symbol */
-Symbol* make_symbol(char* ident, Type type);
+Symbol make_symbol(char* ident, Type type);
 
 /* Initialize a symbol table */
 Symbols_Table* init_Sym_table();
@@ -82,7 +84,7 @@ void free_Program_table(Program_Table* prog_table);
 /* Add a symbol to the symbol table 
  * we suppose that the table as enough left for the symbol
 */
-void add_symbol(Symbols_Table* sym_table, Symbol* symbol);
+void add_symbol(Symbols_Table* sym_table, Symbol symbol);
 
 /* Verify if a symbol with the same ident is already in the table 
  * Return 1 if the symbol is already in the table, 0 otherwise
@@ -101,5 +103,13 @@ void print_func_table(Function_Table* func_table);
 /* Print a program table */
 void print_program_table(Program_Table* prog_table);
 
+/* Add symbols to a symbol table */
+void add_Globals(Node *node, Symbols_Table * table);
+
+/* Add function to a function table */
+void add_Function(Node *node, Function_Table * table);
+
+/* Create the symbol table of a tree */
+void treeToSymbol(Node *node, Program_Table * table);
 
 #endif

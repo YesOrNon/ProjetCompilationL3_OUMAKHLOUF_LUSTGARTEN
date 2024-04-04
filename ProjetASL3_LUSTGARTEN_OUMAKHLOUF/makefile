@@ -7,8 +7,8 @@
 
 CC=gcc
 LEXFLAGS=
-CFLAGS=-Wall
-LDFLAGS=-Wall -ll
+CFLAGS=-Wall -g -Wextra #-fsanitize=undefined
+LDFLAGS=-Wall -ll #-fsanitize=undefined
 BISONFLAGS=-d
 EXEC=tpcas
 PARS=$(EXEC)
@@ -17,13 +17,16 @@ BINDIR=bin
 OBJDIR=obj
 SRCDIR=src
 
-$(BINDIR)/$(EXEC): $(OBJDIR)/$(PARS).o $(OBJDIR)/$(LEX).yy.o $(OBJDIR)/tree.o
+$(BINDIR)/$(EXEC): $(OBJDIR)/$(PARS).o $(OBJDIR)/$(LEX).yy.o $(OBJDIR)/tree.o $(OBJDIR)/Symbols_Table.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-$(OBJDIR)/$(PARS).o: $(OBJDIR)/$(PARS).c $(SRCDIR)/tree.h
+$(OBJDIR)/$(PARS).o: $(OBJDIR)/$(PARS).c $(SRCDIR)/tree.h $(SRCDIR)/Symbols_Table.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
-$(OBJDIR)/$(LEX).yy.o: $(OBJDIR)/$(LEX).yy.c $(OBJDIR)/$(PARS).h $(SRCDIR)/tree.h
+$(OBJDIR)/$(LEX).yy.o: $(OBJDIR)/$(LEX).yy.c $(OBJDIR)/$(PARS).h $(SRCDIR)/tree.h $(SRCDIR)/Symbols_Table.h
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+$(OBJDIR)/Symbols_Table.o: $(SRCDIR)/Symbols_Table.c $(SRCDIR)/Symbols_Table.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 $(OBJDIR)/tree.o: $(SRCDIR)/tree.c $(SRCDIR)/tree.h
