@@ -5,10 +5,10 @@
 
 typedef enum Type
 {
-    FUNCTION,
     INT,
     CHAR,
-    VOID
+    VOID,
+    DEFAULT
 } Type;
 
 
@@ -31,6 +31,7 @@ typedef struct Symbols_Table
 typedef struct Function_Table
 {
     char* ident;                    /* name of the function */
+    Type type_ret;
     Symbols_Table* header;          /* parameters */
     Symbols_Table* body;            /* local variables */
     struct Function_Table* next;    /* next function */
@@ -55,13 +56,13 @@ char* type_to_string(Type type);
 int get_last_adress(Symbols_Table* sym_table);
 
 /* Create a symbol */
-Symbol* make_symbol(char* ident, Type type, int adress_prev);
+Symbol* make_symbol(char* ident, Type type);
 
 /* Initialize a symbol table */
 Symbols_Table* init_Sym_table();
 
 /* Initialize a function table */ // Empty header and body
-Function_Table* init_Func_table(char* ident);
+Function_Table* init_Func_table();
 
 /* Initialize a program table */
 Program_Table* init_Program_table();
