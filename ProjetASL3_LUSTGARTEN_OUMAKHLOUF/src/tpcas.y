@@ -4,7 +4,7 @@ LUSTGARTEN Leo | OUMAKHLOUF Selym */
 
 #include <stdio.h>
 #include <string.h>
-#include "tree.h"
+#include "../src/tree.h"
 
 int yylex(void);
 void yyerror(char* s);
