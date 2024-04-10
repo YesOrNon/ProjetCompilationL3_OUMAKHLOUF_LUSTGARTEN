@@ -336,13 +336,16 @@ int main(int argc, char* argv[]){
             return 3;
         }
     }
+
+    FILE * file = fopen("obj/_anonymous.asm", "w+");
     error = yyparse();
     if (treeOption && !error) printTree(arbre);
     Program_Table * S = init_Program_table();
-    treeToSymbol(arbre, S);
+    treeToSymbol(arbre, S, file);
     print_program_table(S);
     free_Program_table(S);
     deleteTree(arbre);
+    fclose(file);
     return error;
 }
 

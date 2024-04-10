@@ -27,7 +27,6 @@ char* type_to_string(Type type) {
 }
 
 Type string_to_type(char * type) {
-    fprintf(stderr, "String to type: %s\n", type);
     switch (type[0]) {
         case 'i': return INT;
         case 'c': return CHAR;
@@ -161,7 +160,6 @@ void add_Function(Node *node, Function_Table * table){
     Node * type = FIRSTCHILD(header);
     Node * ident = SECONDCHILD(header);
     Node * param = THIRDCHILD(header);
-    try(table, NULL);
     table->type_ret = string_to_type(type->data.comp);
     table->ident = ident->data.ident;
     add_Globals(param, table->header);
@@ -169,12 +167,25 @@ void add_Function(Node *node, Function_Table * table){
     add_Globals(FIRSTCHILD(body), table->body);
 }
 
-void treeToSymbol(Node *node, Program_Table * table) {
+int write_start(FILE * anonymous) {
+    return fprintf(anonymous,"global _start\nsection .text\n_start:\n");
+}
+
+int write_end(FILE * anonymous) {
+    return fprintf(anonymous, "mov rax, 60\nmov rdi, 0\nsyscall\n");
+}
+
+void treeToSymbol(Node *node, Program_Table * table, FILE * file) {
+    int main_flag = 0;
   switch (node->label) {
     case program:
         add_Globals(FIRSTCHILD(node), table->globals);
         break;
     case fonction:
+        if (strcmp(SECONDCHILD(FIRSTCHILD(node))->data.ident, "main") == 0) { /* main */
+            main_flag = write_start(file);
+        }
+
         if (!table->functions){
             table->functions = init_Func_table();
             add_Function(node, table->functions);
@@ -185,11 +196,15 @@ void treeToSymbol(Node *node, Program_Table * table) {
             tmp->next = init_Func_table();
             add_Function(node, tmp->next);
         }
+        if (main_flag) {
+            write_end(file);
+        }
         break;
     default:
       break;
   }
   for (Node *child = FIRSTCHILD(node); child != NULL; child = child->nextSibling) {
-    treeToSymbol(child, table);
+    treeToSymbol(child, table, file);
   }
 }
+

@@ -110,6 +110,6 @@ void add_Globals(Node *node, Symbols_Table * table);
 void add_Function(Node *node, Function_Table * table);
 
 /* Create the symbol table of a tree */
-void treeToSymbol(Node *node, Program_Table * table);
+void treeToSymbol(Node *node, Program_Table * table, FILE * file);
 
 #endif
