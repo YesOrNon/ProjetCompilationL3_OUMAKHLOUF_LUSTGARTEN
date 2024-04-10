@@ -117,10 +117,10 @@ void add_symbol(Symbols_Table* sym_table, Symbol symbol) {
 }
 
 void print_symbol(Symbol* symbol) {
-    printf("\tIdent: %-10s\n", symbol->ident);
-    printf("\t\tType: %-10s\n", type_to_string(symbol->type));
-    printf("\t\tSize: %-10d\n", symbol->size);
-    printf("\t\tDeplct: %-10ld\n", symbol->deplct);
+    printf("\t\tIdent: %-10s\n", symbol->ident);
+    printf("\t\t\tType: %-10s\n", type_to_string(symbol->type));
+    printf("\t\t\tSize: %-10d\n", symbol->size);
+    printf("\t\t\tDeplct: %-10ld\n", symbol->deplct);
 }
 
 void print_sym_table(Symbols_Table* sym_table) {
@@ -130,10 +130,11 @@ void print_sym_table(Symbols_Table* sym_table) {
 }
 
 void print_func_table(Function_Table* func) {
-    printf("\nType:%s Ident: %-10s\n", type_to_string(func->type_ret), func->ident);
-    printf("    Header:\n");
+    printf("\nFunction -> ");
+    printf("Type: %s | Ident: %-10s\n", type_to_string(func->type_ret), func->ident);
+    printf("\tHeader:\n");
     print_sym_table(func->header);
-    printf("    Body:\n");
+    printf("\tBody:\n");
     print_sym_table(func->body);
 }
 
