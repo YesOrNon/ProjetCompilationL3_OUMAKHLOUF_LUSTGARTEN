@@ -77,7 +77,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 24 "src/tpcas.y"
+#line 27 "src/tpcas.y"
 
         Node *node;
         char byte;

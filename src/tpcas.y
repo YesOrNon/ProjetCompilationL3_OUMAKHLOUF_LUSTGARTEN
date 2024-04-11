@@ -3,9 +3,12 @@
 LUSTGARTEN Leo | OUMAKHLOUF Selym */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "../src/Symbols_Table.h"
 #include "../src/traducteur.h"
+#include "../src/exit_functions.h"
+
 
 int yylex(void);
 void yyerror(char* s);
@@ -318,6 +321,20 @@ void afficherHelp(){
 
 int main(int argc, char* argv[]){
     int error;
+
+    FILE * file = fopen("obj/_anonymous.asm", "w+");
+    if (!file) {
+        perror("Error : file is NULL");
+        return 1;
+    }
+
+    Program_Table * S = init_Program_table();
+
+    on_exit(closeProgTable, S);
+    on_exit(closeFile, file);
+    on_exit(closeTree, arbre); // arbre vide dans la fonction ???????????
+
+
     for (int i = 1; i < argc; i++){
         if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--tree") == 0){
             treeOption = 1;
@@ -338,16 +355,14 @@ int main(int argc, char* argv[]){
         }
     }
 
-    FILE * file = fopen("obj/_anonymous.asm", "w+");
     error = yyparse();
     if (treeOption && !error) printTree(arbre);
-    Program_Table * S = init_Program_table();
-    treeToSymbol(arbre, S);
+    if (treeToSymbol(arbre, S)) return 1;
     cToAsm(arbre, file);
-    print_program_table(S);
-    free_Program_table(S);
-    deleteTree(arbre);
-    fclose(file);
+    print_program_table(S); // option -s à faire
+    // deleteTree(arbre);
+    if (arbre == NULL) printf("un homme à la mèr\n");
+    if (arbre != NULL) printf("deux hommes à la mèr\n");
     return error;
 }
 
