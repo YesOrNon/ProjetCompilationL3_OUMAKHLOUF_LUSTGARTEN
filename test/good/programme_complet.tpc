@@ -24,12 +24,14 @@ int main(void) {
     int number;
     int div_test;
 
+    x = -2;
+    x = 4+2;
     x = 2;
     c = '*';
     babaIsYou = '\'';
     keke = 'b';
+    number = 5 - 2;
     number = 2 * 2;
-    number = 2 - 2;
     div_test = x / 1;
     tab[2 * 3] = 3; 
 
