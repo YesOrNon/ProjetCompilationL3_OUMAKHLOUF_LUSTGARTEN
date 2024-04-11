@@ -1,7 +1,6 @@
 /* Exercice 2 */
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include "Symbols_Table.h"
 #include "../try.h"
 #include <stdbool.h>
@@ -167,25 +166,12 @@ void add_Function(Node *node, Function_Table * table){
     add_Globals(FIRSTCHILD(body), table->body);
 }
 
-int write_start(FILE * anonymous) {
-    return fprintf(anonymous,"global _start\nsection .text\n_start:\n");
-}
-
-int write_end(FILE * anonymous) {
-    return fprintf(anonymous, "mov rax, 60\nmov rdi, 0\nsyscall\n");
-}
-
-void treeToSymbol(Node *node, Program_Table * table, FILE * file) {
-    int main_flag = 0;
+void treeToSymbol(Node *node, Program_Table * table) {
   switch (node->label) {
     case program:
         add_Globals(FIRSTCHILD(node), table->globals);
         break;
     case fonction:
-        if (strcmp(SECONDCHILD(FIRSTCHILD(node))->data.ident, "main") == 0) { /* main */
-            main_flag = write_start(file);
-        }
-
         if (!table->functions){
             table->functions = init_Func_table();
             add_Function(node, table->functions);
@@ -196,15 +182,12 @@ void treeToSymbol(Node *node, Program_Table * table, FILE * file) {
             tmp->next = init_Func_table();
             add_Function(node, tmp->next);
         }
-        if (main_flag) {
-            write_end(file);
-        }
         break;
     default:
       break;
   }
   for (Node *child = FIRSTCHILD(node); child != NULL; child = child->nextSibling) {
-    treeToSymbol(child, table, file);
+    treeToSymbol(child, table);
   }
 }
 

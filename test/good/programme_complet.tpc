@@ -11,7 +11,9 @@ int double(int n) {
 /* Fonction qui je sert
     à
         rien */
-void ne_fait_rien(char c, int tab[], int unNombre) {}
+void ne_fait_rien(char c, int tab[], int unNombre) {
+    int oui;
+}
 
 
 int main(void) {

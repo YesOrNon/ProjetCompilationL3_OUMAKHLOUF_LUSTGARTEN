@@ -17,19 +17,16 @@ BINDIR=bin
 OBJDIR=obj
 SRCDIR=src
 
-$(BINDIR)/$(EXEC): $(OBJDIR)/$(PARS).o $(OBJDIR)/$(LEX).yy.o $(OBJDIR)/tree.o $(OBJDIR)/Symbols_Table.o
+$(BINDIR)/$(EXEC): $(OBJDIR)/$(PARS).o $(OBJDIR)/$(LEX).yy.o $(OBJDIR)/tree.o $(OBJDIR)/Symbols_Table.o $(OBJDIR)/traducteur.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-$(OBJDIR)/$(PARS).o: $(OBJDIR)/$(PARS).c $(SRCDIR)/tree.h $(SRCDIR)/Symbols_Table.h
+$(OBJDIR)/$(PARS).o: $(OBJDIR)/$(PARS).c $(SRCDIR)/*.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
-$(OBJDIR)/$(LEX).yy.o: $(OBJDIR)/$(LEX).yy.c $(OBJDIR)/$(PARS).h $(SRCDIR)/tree.h $(SRCDIR)/Symbols_Table.h
+$(OBJDIR)/$(LEX).yy.o: $(OBJDIR)/$(LEX).yy.c $(OBJDIR)/$(PARS).h $(SRCDIR)/*.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
-$(OBJDIR)/Symbols_Table.o: $(SRCDIR)/Symbols_Table.c $(SRCDIR)/Symbols_Table.h
-	$(CC) -o $@ -c $< $(CFLAGS)
-
-$(OBJDIR)/tree.o: $(SRCDIR)/tree.c $(SRCDIR)/tree.h
+$(OBJDIR)/%.o: $(SRCDIR)/%.c $(SRCDIR)/%.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 $(OBJDIR)/$(PARS).c $(OBJDIR)/$(PARS).h: $(SRCDIR)/$(PARS).y

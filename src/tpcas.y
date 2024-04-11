@@ -5,6 +5,7 @@ LUSTGARTEN Leo | OUMAKHLOUF Selym */
 #include <stdio.h>
 #include <string.h>
 #include "../src/Symbols_Table.h"
+#include "../src/traducteur.h"
 
 int yylex(void);
 void yyerror(char* s);
@@ -341,7 +342,8 @@ int main(int argc, char* argv[]){
     error = yyparse();
     if (treeOption && !error) printTree(arbre);
     Program_Table * S = init_Program_table();
-    treeToSymbol(arbre, S, file);
+    treeToSymbol(arbre, S);
+    cToAsm(arbre, file);
     print_program_table(S);
     free_Program_table(S);
     deleteTree(arbre);
