@@ -10,6 +10,7 @@ typedef enum Type
     INT,
     CHAR,
     VOID_,
+    FUNCTION,
     DEFAULT
 } Type;
 

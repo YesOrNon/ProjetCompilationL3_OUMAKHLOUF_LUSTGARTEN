@@ -12,6 +12,7 @@ int determine_size(Type type) {
         case INT: return 4;
         case CHAR: return 1;
         case VOID_: return 0;
+        case FUNCTION: return '?';
         default: return -1;
     }
 }
@@ -21,6 +22,7 @@ char* type_to_string(Type type) {
         case INT: return "INT";
         case CHAR: return "CHAR";
         case VOID_: return "VOID";
+        case FUNCTION: return "FUNCTION";
         default: return "UNKNOWN";
     }
 }
@@ -30,6 +32,7 @@ Type string_to_type(char * type) {
         case 'i': return INT;
         case 'c': return CHAR;
         case 'v': return VOID_;
+        case 'f': return FUNCTION;
         default: return DEFAULT;
     }
 }
@@ -182,6 +185,7 @@ void treeToSymbol(Node *node, Program_Table * table) {
             tmp->next = init_Func_table();
             add_Function(node, tmp->next);
         }
+        add_symbol(table->globals, make_symbol(SECONDCHILD(FIRSTCHILD(node))->data.ident, FUNCTION));
         break;
     default:
       break;
