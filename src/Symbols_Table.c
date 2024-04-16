@@ -76,6 +76,15 @@ void free_Program_table(Program_Table* prog_table) {
 
 // USEFULL FUNCTIONS //
 
+Type find_Symbol_type(Symbols_Table * sym_table, char * ident) {
+    for (int i = 0; i < sym_table->index; i++) {
+        if (strcmp(sym_table->tab[i].ident, ident) == 0) {
+            return sym_table->tab[i].type;
+        }
+    }
+    return DEFAULT;
+}
+
 int isPresent(Symbols_Table* sym_table, char* ident) {
     for (int i = 0; i < sym_table->index; i++) {
         if (strcmp(sym_table->tab[i].ident, ident) == 0) {
@@ -103,6 +112,68 @@ int isPresent_all(Program_Table *table, Node* node) {
     if (body)       printf("\tIn body of %s\n", func->ident); */
     if (!(body || header || globals)) printf("Error : %s is not defined\n", node->data.ident);
     return  body || header || globals;
+}
+
+Type expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue) {
+    Type left, right;
+    switch (node->label) {
+    case ident:
+        if (Lvalue) {
+            printf("%s = ", node->data.ident);
+            left = find_Symbol_type(table->body, node->data.ident);
+            if (left == DEFAULT) left = find_Symbol_type(table->header, node->data.ident); // problème avec variables globales
+            if (left == DEFAULT) left = find_Symbol_type(program->globals, node->data.ident); // variables globales
+            right = expr_type(program, table, node->nextSibling, 0);
+            if ((left == CHAR && right == INT) || (left == INT && right == CHAR)) {
+                fprintf(stderr, "\nWarning : Operation between CHAR and INT variables\n");
+                return INT;
+            }
+            else if (left == INT && right == INT) return INT;
+            else if (left == CHAR && right == CHAR) return CHAR;
+            else return DEFAULT;
+        }
+        else printf("%s ", node->data.ident);
+        right = find_Symbol_type(table->body, node->data.ident);
+        if (right == DEFAULT) left = find_Symbol_type(table->header, node->data.ident);
+        if (right == DEFAULT) right = find_Symbol_type(program->globals, node->data.ident); // variables globales
+        return right;
+
+    case num:
+        printf("%d ", node->data.num);
+        return INT;
+
+    case addsubUnaire:
+        printf("%c ", node->data.byte);
+        return expr_type(program, table, FIRSTCHILD(node), 0);
+
+    case addsub:
+        left = expr_type(program, table, FIRSTCHILD(node), 0);
+        printf("%c ", node->data.byte);
+        right = expr_type(program, table, SECONDCHILD(node), 0);
+        if ((left == CHAR && right == INT) || (left == INT && right == CHAR))
+            fprintf(stderr, "\nWarning : Operation between CHAR and INT variables\n");
+        return INT;
+
+    case divstar:
+        left = expr_type(program, table, FIRSTCHILD(node), 0);
+        printf("%c ", node->data.byte);
+        right = expr_type(program, table, SECONDCHILD(node), 0);
+        if (left == INT && right == INT) return INT;
+        else return DEFAULT;
+
+    case charac:
+        printf("%s ", node->data.ident);
+        return CHAR;
+
+    case ident_tab:
+        printf("%s[ ", node->data.ident);
+        expr_type(program, table, FIRSTCHILD(node), 0);
+        printf("] = ");
+        return expr_type(program, table, node->nextSibling, 0);
+
+    default:
+        return DEFAULT; 
+    }
 }
 
 int determine_size(Type type) {
@@ -178,6 +249,8 @@ int add_Function(Node *node, Function_Table * table){
 }
 
 int treeToSymbol(Node *node, Program_Table * table) {
+    Type aff;
+    Function_Table* func = table->functions;
     switch (node->label) {
         case program:
             if (add_Symbols_to_Table(FIRSTCHILD(node), table->globals)) return 1;
@@ -197,6 +270,20 @@ int treeToSymbol(Node *node, Program_Table * table) {
             break;
         case ident:
             if (!isPresent_all(table, node)) return 1;
+            break;
+        case affectation:
+            if (func != NULL) {
+                while (func->next != NULL) {
+                    func = func->next;
+                }
+            }
+            printf("\naffectation : ");
+            aff = expr_type(table, func, FIRSTCHILD(node), 1);
+            printf("\n\tType : %s", type_to_string(aff));
+            if (aff  == DEFAULT) {
+                fprintf(stderr, "Error : Type of Expr\n");
+                return 1;
+            }
             break;
         default:
             break;
@@ -234,7 +321,7 @@ void print_func_table(Function_Table* func) {
 }
 
 void print_program_table(Program_Table* prog) {
-    printf("Globals:\n");
+    printf("\nGlobals:\n");
     print_sym_table(prog->globals);
     Function_Table* func = prog->functions;
     while (func != NULL) {

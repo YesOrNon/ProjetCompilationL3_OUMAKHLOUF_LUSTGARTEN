@@ -23,6 +23,8 @@ int main(void) {
     int tab[10]; // tableau de taille 10
     int number;
     int div_test;
+    int ici;
+    char my_char;
 
     x = -2;
     x = 4+2;
@@ -34,6 +36,8 @@ int main(void) {
     number = 2 * 2;
     div_test = x / 1;
     tab[2 * 3] = 3; 
+    ici = 'a' + 1;
+    my_char = ici;
 
     if (number == 4) {
         if (x > 0 || div_test <= x) {

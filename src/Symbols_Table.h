@@ -78,6 +78,11 @@ void free_Program_table(Program_Table* prog_table);
 
 // USEFULL FUNCTIONS //
 
+/* Return the type of the ident if it corresponds to a symbol in sym_table
+ * DEFAULT otherwise
+*/
+Type find_Symbol_type(Symbols_Table * sym_table, char * ident);
+
 /* Verify if a symbol with the same ident is already in the table 
  * Return 1 if the symbol is already in the table, 0 otherwise
 */
@@ -90,6 +95,11 @@ int isPresent(Symbols_Table* sym_table, char* symbol);
  * Return 1 if the node->data.ident has been found in any of the table, 0 otherwise
 */
 int isPresent_all(Program_Table * table, Node * node);
+
+/* Return the type of the expr followed by the affection node
+ * DEFAULT if assembling wrong types
+*/
+Type expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue);
 
 /* Return the size (in bytes) based on the type */
 int determine_size(Type type);
