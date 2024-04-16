@@ -86,19 +86,23 @@ int isPresent(Symbols_Table* sym_table, char* ident) {
 }
 
 int isPresent_all(Program_Table *table, Node* node) {
-    int found = 0;
+    int globals = 0, header = 0, body = 0;
     Function_Table* func = table->functions;
-    printf("IDENT : %s\n", node->data.ident);
-    if (isPresent(table->globals, node->data.ident))    {printf("\tIn globals\n"); found = 1;}
+/*     printf("CHECKING FOR IDENT : %s\n", node->data.ident); */
+    globals = isPresent(table->globals, node->data.ident);    
     if (func != NULL) {
         while (func->next != NULL) {
             func = func->next;
         }
-        printf("Dernière fonction : %s\n", func->ident);
-        if (isPresent(func->header, node->data.ident))  {printf("\tIn header of %s\n", func->ident); found = 1;}
-        if (isPresent(func->body, node->data.ident))    {printf("\tIn body of %s\n", func->ident); found = 1;}
+        // printf("\tCHECKING FOR IDENT IN FUNCTION : %s\n", func->ident);
+        header = isPresent(func->header, node->data.ident);
+        body = isPresent(func->body, node->data.ident);
     }
-    return found;
+/*     if (globals)    printf("\tIn globals\n");
+    if (header)     printf("\tIn header of %s\n", func->ident);
+    if (body)       printf("\tIn body of %s\n", func->ident); */
+    if (!(body || header || globals)) printf("Error : %s is not defined\n", node->data.ident);
+    return  body || header || globals;
 }
 
 int determine_size(Type type) {
@@ -141,7 +145,7 @@ int get_last_adress(Symbols_Table* sym_table) {
 
 int add_symbol(Symbols_Table* sym_table, Symbol symbol) {
     if (isPresent(sym_table, symbol.ident)) {
-        perror("Error : same ident");
+        fprintf(stderr, "Error : identifier already exists : %s\n", symbol.ident);
         return 1;
     }
     symbol.deplct = get_last_adress(sym_table) + symbol.size;
@@ -192,14 +196,15 @@ int treeToSymbol(Node *node, Program_Table * table) {
             if (add_symbol(table->globals, make_symbol(SECONDCHILD(FIRSTCHILD(node))->data.ident, FUNCTION)))   return 1;
             break;
         case ident:
-            if (isPresent_all(table, node)) return 1;
+            if (!isPresent_all(table, node)) return 1;
             break;
         default:
             break;
     }
     for (Node *child = FIRSTCHILD(node); child != NULL; child = child->nextSibling) {
-            treeToSymbol(child, table);
+            if (treeToSymbol(child, table)) return 1;
     }
+
     return 0;
 }
 

@@ -358,13 +358,14 @@ int main(int argc, char* argv[]){
     error = yyparse();
     if (treeOption && !error) printTree(arbre);
     if (treeToSymbol(arbre, S)) {
-        printf("early return");
+        printf("early return\n");
         deleteTree(arbre);
         return error;
     }
     cToAsm(arbre, file);
     print_program_table(S); // option -s à faire
     deleteTree(arbre);
+    printf("normal return\n");
     return error;
 }
 
