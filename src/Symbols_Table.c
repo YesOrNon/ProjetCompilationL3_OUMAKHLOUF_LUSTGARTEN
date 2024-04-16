@@ -76,13 +76,29 @@ void free_Program_table(Program_Table* prog_table) {
 
 // USEFULL FUNCTIONS //
 
-int isPresent(Symbols_Table* sym_table, Symbol* symbol) {
+int isPresent(Symbols_Table* sym_table, char* ident) {
     for (int i = 0; i < sym_table->index; i++) {
-        if (strcmp(sym_table->tab[i].ident, symbol->ident) == 0) {
+        if (strcmp(sym_table->tab[i].ident, ident) == 0) {
             return 1;
         }
     }
     return 0;
+}
+
+int isPresent_all(Program_Table *table, Node* node) {
+    int found = 0;
+    Function_Table* func = table->functions;
+    printf("IDENT : %s\n", node->data.ident);
+    if (isPresent(table->globals, node->data.ident))    {printf("\tIn globals\n"); found = 1;}
+    if (func != NULL) {
+        while (func->next != NULL) {
+            func = func->next;
+        }
+        printf("Dernière fonction : %s\n", func->ident);
+        if (isPresent(func->header, node->data.ident))  {printf("\tIn header of %s\n", func->ident); found = 1;}
+        if (isPresent(func->body, node->data.ident))    {printf("\tIn body of %s\n", func->ident); found = 1;}
+    }
+    return found;
 }
 
 int determine_size(Type type) {
@@ -124,7 +140,7 @@ int get_last_adress(Symbols_Table* sym_table) {
 // CORE FUNCTIONS //
 
 int add_symbol(Symbols_Table* sym_table, Symbol symbol) {
-    if (isPresent(sym_table, &symbol)) {
+    if (isPresent(sym_table, symbol.ident)) {
         perror("Error : same ident");
         return 1;
     }
@@ -134,8 +150,10 @@ int add_symbol(Symbols_Table* sym_table, Symbol symbol) {
 }
 
 int add_Symbols_to_Table(Node *node, Symbols_Table * table){
-    if (node->label == type)
+    if (node->label == type) {
+        // printf("SYMBOL TO TABLE : %s\n", FIRSTCHILD(node)->data.ident);
         if (add_symbol(table, make_symbol(FIRSTCHILD(node)->data.ident, string_to_type(node->data.comp))))  return 1;
+    }
     for (Node *child = FIRSTCHILD(node); child != NULL; child = child->nextSibling) {
         if (add_Symbols_to_Table(child, table)) return 1;
     }
@@ -156,30 +174,33 @@ int add_Function(Node *node, Function_Table * table){
 }
 
 int treeToSymbol(Node *node, Program_Table * table) {
-  switch (node->label) {
-    case program:
-        add_Symbols_to_Table(FIRSTCHILD(node), table->globals);
-        break;
-    case fonction:
-        if (!table->functions){
-            table->functions = init_Func_table();
-            if (add_Function(node, table->functions))   return 1;
-        }
-        else{
-            Function_Table * tmp;
-            for (tmp = table->functions; tmp->next != NULL; tmp = tmp->next) {}
-            tmp->next = init_Func_table();
-            if (add_Function(node, tmp->next)) return 1;
-        }
-        if (add_symbol(table->globals, make_symbol(SECONDCHILD(FIRSTCHILD(node))->data.ident, FUNCTION)))   return 1;
-        break;
-    default:
-      break;
-  }
-  for (Node *child = FIRSTCHILD(node); child != NULL; child = child->nextSibling) {
-    treeToSymbol(child, table);
-  }
-  return 0;
+    switch (node->label) {
+        case program:
+            if (add_Symbols_to_Table(FIRSTCHILD(node), table->globals)) return 1;
+            break;
+        case fonction:
+            if (!table->functions){
+                table->functions = init_Func_table();
+                if (add_Function(node, table->functions))   return 1;
+            }
+            else{
+                Function_Table * tmp;
+                for (tmp = table->functions; tmp->next != NULL; tmp = tmp->next) {}
+                tmp->next = init_Func_table();
+                if (add_Function(node, tmp->next)) return 1;
+            }
+            if (add_symbol(table->globals, make_symbol(SECONDCHILD(FIRSTCHILD(node))->data.ident, FUNCTION)))   return 1;
+            break;
+        case ident:
+            if (isPresent_all(table, node)) return 1;
+            break;
+        default:
+            break;
+    }
+    for (Node *child = FIRSTCHILD(node); child != NULL; child = child->nextSibling) {
+            treeToSymbol(child, table);
+    }
+    return 0;
 }
 
 

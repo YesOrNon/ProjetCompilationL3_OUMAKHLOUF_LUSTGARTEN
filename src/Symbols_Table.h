@@ -81,7 +81,9 @@ void free_Program_table(Program_Table* prog_table);
 /* Verify if a symbol with the same ident is already in the table 
  * Return 1 if the symbol is already in the table, 0 otherwise
 */
-int isPresent(Symbols_Table* sym_table, Symbol* symbol);
+int isPresent(Symbols_Table* sym_table, char* symbol);
+
+int isPresent_all(Program_Table * table, Node * node);
 
 /* Return the size (in bytes) based on the type */
 int determine_size(Type type);
