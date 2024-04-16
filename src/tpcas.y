@@ -332,7 +332,7 @@ int main(int argc, char* argv[]){
 
     on_exit(closeProgTable, S);
     on_exit(closeFile, file);
-    on_exit(closeTree, arbre); // arbre vide dans la fonction ???????????
+    // on_exit(closeTree, arbre); // arbre vide dans la fonction ???????????
 
 
     for (int i = 1; i < argc; i++){
@@ -357,12 +357,14 @@ int main(int argc, char* argv[]){
 
     error = yyparse();
     if (treeOption && !error) printTree(arbre);
-    if (treeToSymbol(arbre, S)) return 1;
+    if (treeToSymbol(arbre, S)) {
+        printf("early return");
+        deleteTree(arbre);
+        return error;
+    }
     cToAsm(arbre, file);
     print_program_table(S); // option -s à faire
-    // deleteTree(arbre);
-    if (arbre == NULL) printf("un homme à la mèr\n");
-    if (arbre != NULL) printf("deux hommes à la mèr\n");
+    deleteTree(arbre);
     return error;
 }
 
