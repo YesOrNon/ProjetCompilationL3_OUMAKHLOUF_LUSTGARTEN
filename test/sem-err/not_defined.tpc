@@ -1,0 +1,17 @@
+int x;
+char c;
+
+/* Renvoie le double de la valeur passé en arguments */
+int double(int n) {
+    return n * 2;
+}
+
+void ne_fait_rien(char c, int tab[], int unNombre) {
+    int oui;
+    machin = 'l'; // error , machin is not defined
+}
+
+int main(void) {
+
+    return 0; 
+}

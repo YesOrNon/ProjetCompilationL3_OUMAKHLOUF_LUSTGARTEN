@@ -1,0 +1,16 @@
+
+// Ceci est un programme de test permettant de vérifier nos règles
+
+int x;
+char c;
+int x; /* Error :  identifier already exists*/
+
+/* fonction de même nom qu'une varibale globale */
+void c(int n) {
+    int test;
+}
+
+int main(void) {
+
+    return 0; 
+}

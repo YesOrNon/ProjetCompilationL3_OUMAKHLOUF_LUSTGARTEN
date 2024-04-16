@@ -83,6 +83,12 @@ void free_Program_table(Program_Table* prog_table);
 */
 int isPresent(Symbols_Table* sym_table, char* symbol);
 
+/* Verify if a symbol with the same ident as the node->data.ident is already
+ * either : - in the table of globals
+ *          - in the header table of the last function
+ *          - in the body table of the last function
+ * Return 1 if the node->data.ident has been found in any of the table, 0 otherwise
+*/
 int isPresent_all(Program_Table * table, Node * node);
 
 /* Return the size (in bytes) based on the type */

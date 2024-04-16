@@ -1,0 +1,15 @@
+
+// Ceci est un programme de test permettant de vérifier nos règles
+
+int x;
+char c;
+
+
+void c(int n) {     /* Error :  identifier already exists : c*/
+    int test;
+}
+
+int main(void) {
+
+    return 0; 
+}
