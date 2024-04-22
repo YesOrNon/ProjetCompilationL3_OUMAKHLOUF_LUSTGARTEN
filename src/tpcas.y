@@ -332,8 +332,6 @@ int main(int argc, char* argv[]){
 
     on_exit(closeProgTable, S);
     on_exit(closeFile, file);
-    // on_exit(closeTree, arbre); // arbre vide dans la fonction ???????????
-
 
     for (int i = 1; i < argc; i++){
         if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--tree") == 0){
