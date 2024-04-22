@@ -96,8 +96,6 @@ int isPresent(Symbols_Table* sym_table, char* ident) {
 
 int isPresent_all(Program_Table *table, Node* node) {
     int globals = 0, header = 0, body = 0;
-    if (strcmp(node->data.ident, "getint") == 0 || strcmp(node->data.ident, "getchar") == 0) return 1;
-    if (strcmp(node->data.ident, "putchar") == 0 || strcmp(node->data.ident, "putint") == 0) return 1;
     Function_Table* func = table->functions;
     // printf("CHECKING FOR IDENT : %s\n", node->data.ident);
     globals = isPresent(table->globals, node->data.ident);    
@@ -112,7 +110,6 @@ int isPresent_all(Program_Table *table, Node* node) {
     // if (globals)    printf("\tIn globals\n");
     // if (header)     printf("\tIn header of %s\n", func->ident);
     // if (body)       printf("\tIn body of %s\n", func->ident);
-    if (!(body || header || globals)) printf("Error : %s is not defined\n", node->data.ident);
     return  body || header || globals;
 }
 
@@ -282,7 +279,13 @@ int treeToSymbol(Node *node, Program_Table * table) {
             if (add_symbol(table->globals, make_symbol(SECONDCHILD(FIRSTCHILD(node))->data.ident, FUNCTION)))   return 1;
             break;
         case ident:
-            if (!isPresent_all(table, node)) return 1;
+            if (!isPresent_all(table, node)) {
+                if (strcmp(node->data.ident, "getint") == 0); // utiliser my_getint
+                else if (strcmp(node->data.ident, "getchar") == 0); // utiliser my_getchar
+                else if (strcmp(node->data.ident, "putchar") == 0);
+                else if (strcmp(node->data.ident, "putint") == 0);
+                else {printf("Error : %s is not defined\n", node->data.ident); return 1;}
+            }
             break;
         case affectation:
             if (func != NULL) {
