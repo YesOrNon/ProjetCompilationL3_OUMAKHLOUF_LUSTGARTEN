@@ -4,7 +4,7 @@
 int main_flag = 0;
 
 int write_start(FILE * anonymous) {
-    return fprintf(anonymous,"global _start\nsection .text\n_start:\n");
+    return fprintf(anonymous, "global _start\nsection .text\n_start:\n");
 }
 
 int write_end(FILE * anonymous) {

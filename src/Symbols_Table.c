@@ -96,8 +96,10 @@ int isPresent(Symbols_Table* sym_table, char* ident) {
 
 int isPresent_all(Program_Table *table, Node* node) {
     int globals = 0, header = 0, body = 0;
+    if (strcmp(node->data.ident, "getint") == 0 || strcmp(node->data.ident, "getchar") == 0) return 1;
+    if (strcmp(node->data.ident, "putchar") == 0 || strcmp(node->data.ident, "putint") == 0) return 1;
     Function_Table* func = table->functions;
-/*     printf("CHECKING FOR IDENT : %s\n", node->data.ident); */
+    // printf("CHECKING FOR IDENT : %s\n", node->data.ident);
     globals = isPresent(table->globals, node->data.ident);    
     if (func != NULL) {
         while (func->next != NULL) {
@@ -107,9 +109,9 @@ int isPresent_all(Program_Table *table, Node* node) {
         header = isPresent(func->header, node->data.ident);
         body = isPresent(func->body, node->data.ident);
     }
-/*     if (globals)    printf("\tIn globals\n");
-    if (header)     printf("\tIn header of %s\n", func->ident);
-    if (body)       printf("\tIn body of %s\n", func->ident); */
+    // if (globals)    printf("\tIn globals\n");
+    // if (header)     printf("\tIn header of %s\n", func->ident);
+    // if (body)       printf("\tIn body of %s\n", func->ident);
     if (!(body || header || globals)) printf("Error : %s is not defined\n", node->data.ident);
     return  body || header || globals;
 }
@@ -121,8 +123,8 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
         if (Lvalue) {
             printf("%s = ", node->data.ident);
             left = find_Symbol_type(table->body, node->data.ident);
-            if (left == DEFAULT) left = find_Symbol_type(table->header, node->data.ident); // problème avec variables globales
-            if (left == DEFAULT) left = find_Symbol_type(program->globals, node->data.ident); // variables globales
+            if (left == DEFAULT) left = find_Symbol_type(table->header, node->data.ident);
+            if (left == DEFAULT) left = find_Symbol_type(program->globals, node->data.ident);
             right = expr_type(program, table, node->nextSibling, 0);
             if ((left == CHAR && right == INT) || (left == INT && right == CHAR)) {
                 fprintf(stderr, "\nWarning : Operation between CHAR and INT variables\n");
@@ -133,9 +135,13 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
             else return DEFAULT;
         }
         else printf("%s ", node->data.ident);
-        right = find_Symbol_type(table->body, node->data.ident);
-        if (right == DEFAULT) left = find_Symbol_type(table->header, node->data.ident);
-        if (right == DEFAULT) right = find_Symbol_type(program->globals, node->data.ident); // variables globales
+        if (strcmp(node->data.ident, "getint") == 0) {printf("GETINT"); return INT;}
+        else if (strcmp(node->data.ident, "getchar") == 0) return CHAR;
+        else {
+            right = find_Symbol_type(table->body, node->data.ident);
+            if (right == DEFAULT) left = find_Symbol_type(table->header, node->data.ident);
+            if (right == DEFAULT) right = find_Symbol_type(program->globals, node->data.ident);
+        }
         return right;
 
     case num:
@@ -172,6 +178,7 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
         return expr_type(program, table, node->nextSibling, 0);
 
     default:
+        printf("DEFAULT : %s\n", node->data.ident);
         return DEFAULT; 
     }
 }
@@ -226,8 +233,14 @@ int add_symbol(Symbols_Table* sym_table, Symbol symbol) {
 
 int add_Symbols_to_Table(Node *node, Symbols_Table * table){
     if (node->label == type) {
-        // printf("SYMBOL TO TABLE : %s\n", FIRSTCHILD(node)->data.ident);
         if (add_symbol(table, make_symbol(FIRSTCHILD(node)->data.ident, string_to_type(node->data.comp))))  return 1;
+        if (FIRSTCHILD(node)->nextSibling) {
+            Node * sibling = FIRSTCHILD(node)->nextSibling;
+            while(sibling) {
+                if (add_symbol(table, make_symbol(sibling->data.ident, string_to_type(node->data.comp)))) return 1;
+                sibling = sibling->nextSibling;
+            }
+        }
     }
     for (Node *child = FIRSTCHILD(node); child != NULL; child = child->nextSibling) {
         if (add_Symbols_to_Table(child, table)) return 1;
@@ -279,11 +292,14 @@ int treeToSymbol(Node *node, Program_Table * table) {
             }
             printf("\naffectation : ");
             aff = expr_type(table, func, FIRSTCHILD(node), 1);
-            printf("\n\tType : %s", type_to_string(aff));
+            printf("\n\tType : %s\n", type_to_string(aff));
             if (aff  == DEFAULT) {
-                fprintf(stderr, "Error : Type of Expr\n");
+                fprintf(stderr, "\nError : Type of Expr\n");
                 return 1;
             }
+            break;
+        case IDENTs:
+            printf("IDENTS : %s\n", node->firstChild->data.ident);
             break;
         default:
             break;
