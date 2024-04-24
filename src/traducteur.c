@@ -72,6 +72,23 @@ int eval_expr(FILE * anonymous, Node * node) {
     return 0;
 }
 
+void my_getint(FILE * file) {
+    fprintf(file, "call my_getint\n");
+}
+
+void my_getchar(FILE * file) {
+    fprintf(file, "call my_getchar\n");
+}
+
+void my_putint(FILE * file) {
+    fprintf(file, "call my_putint\n");
+}
+
+void my_putchar(FILE * file) {
+    fprintf(file, "call my_putchar\n");
+}
+
+
 void cToAsm(Node *node, FILE * file) {
     switch (node->label) {
         case affectation:
@@ -81,6 +98,12 @@ void cToAsm(Node *node, FILE * file) {
             if (strcmp(SECONDCHILD(FIRSTCHILD(node))->data.ident, "main") == 0) { /* main */
                 main_flag = write_start(file);
             }
+            break;
+        case ident:
+            if (strcmp(node->data.ident, "getint") == 0) my_getint(file);
+            else if (strcmp(node->data.ident, "getchar") == 0) my_getchar(file);
+            else if (strcmp(node->data.ident, "putchar") == 0) my_putchar(file);
+            else if (strcmp(node->data.ident, "putint") == 0) my_putint(file);
             break;
         default:
             break;
@@ -93,4 +116,5 @@ void cToAsm(Node *node, FILE * file) {
         main_flag = 0;
     }
 }
+
 

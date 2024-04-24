@@ -7,7 +7,6 @@
 
 // using try might be a bad idea, stops the program if malloc fails
 
-
 // INIT //
 
 Symbol make_symbol(char* ident, Type type) {
@@ -280,8 +279,8 @@ int treeToSymbol(Node *node, Program_Table * table) {
             break;
         case ident:
             if (!isPresent_all(table, node)) {
-                if (strcmp(node->data.ident, "getint") == 0); // utiliser my_getint
-                else if (strcmp(node->data.ident, "getchar") == 0); // utiliser my_getchar
+                if (strcmp(node->data.ident, "getint") == 0);
+                else if (strcmp(node->data.ident, "getchar") == 0);
                 else if (strcmp(node->data.ident, "putchar") == 0);
                 else if (strcmp(node->data.ident, "putint") == 0);
                 else {printf("Error : %s is not defined\n", node->data.ident); return 1;}
