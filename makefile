@@ -26,8 +26,14 @@ $(OBJDIR)/$(PARS).o: $(OBJDIR)/$(PARS).c $(SRCDIR)/*.h
 $(OBJDIR)/$(LEX).yy.o: $(OBJDIR)/$(LEX).yy.c $(OBJDIR)/$(PARS).h $(SRCDIR)/*.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
+$(OBJDIR)/Symbols_Table.o: $(SRCDIR)/Symbols_Table.c $(SRCDIR)/Symbols_Table.h $(OBJDIR)/my_putint.o $(OBJDIR)/my_getchar.o $(OBJDIR)/my_getint.o $(OBJDIR)/my_putchar.o
+	$(CC) -o $@ $^ -no-pie
+
 $(OBJDIR)/%.o: $(SRCDIR)/%.c $(SRCDIR)/%.h
 	$(CC) -o $@ -c $< $(CFLAGS)
+
+$(OBJDIR)/%.o: $(SRCDIR)/asm/%.asm
+	nasm -f elf64 -g -o $@ $<
 
 $(OBJDIR)/$(PARS).c $(OBJDIR)/$(PARS).h: $(SRCDIR)/$(PARS).y
 	bison $(BISONFLAGS) -o $(OBJDIR)/$(PARS).c $(SRCDIR)/$(PARS).y
