@@ -1,5 +1,4 @@
 #include "traducteur.h"
-#include "Symbols_Table.h"
 #include <string.h>
 
 static const char * const txt_getchar = 
@@ -96,14 +95,20 @@ static const char * const txt_putint =
 
 int main_flag = 0;
 
-int write_start(FILE * anonymous) {
-    return fprintf(anonymous,   "section .text\n"
+int write_start(FILE * anonymous, Symbols_Table* globals) {
+    int res_static = 0;
+    if (globals->index)
+        res_static = get_last_adress(globals); //globals->tab[globals->index].size;
+    return fprintf(anonymous,   "section .bss\n"
+                                "VarGlobals resb %d\n"
+                                "section .text\n"
                                 "global _start\n"
                                 "%s"
                                 "%s"
                                 "%s"
                                 "%s"
                                 "_start:\n",
+                                res_static,
                                 txt_getchar,
                                 txt_getint,
                                 txt_putchar,
@@ -192,14 +197,14 @@ void my_putchar(FILE * file) {
 }
 
 
-void cToAsm(Node *node, FILE * file) {
+void cToAsm(Node *node, FILE * file, Program_Table* program) {
     switch (node->label) {
         case affectation:
             eval_expr(file, SECONDCHILD(node));
             break;
         case fonction:
             if (strcmp(SECONDCHILD(FIRSTCHILD(node))->data.ident, "main") == 0) { /* main */
-                main_flag = write_start(file);
+                main_flag = write_start(file, program->globals);
             }
             break;
         case ident:
@@ -212,7 +217,7 @@ void cToAsm(Node *node, FILE * file) {
             break;
     }
     for (Node *child = FIRSTCHILD(node); child != NULL; child = child->nextSibling) {
-        cToAsm(child, file);
+        cToAsm(child, file, program);
     }
     if (node->label == fonction && main_flag > 0) {
         write_end(file);

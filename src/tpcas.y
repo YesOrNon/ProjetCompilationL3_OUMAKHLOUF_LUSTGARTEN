@@ -360,7 +360,7 @@ int main(int argc, char* argv[]){
         deleteTree(arbre);
         return error;
     }
-    cToAsm(arbre, file);
+    cToAsm(arbre, file, S);
     print_program_table(S); // option -s à faire
     deleteTree(arbre);
     printf("normal return\n");

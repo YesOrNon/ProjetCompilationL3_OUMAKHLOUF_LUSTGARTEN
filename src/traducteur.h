@@ -3,8 +3,9 @@
 
 #include <stdio.h>
 #include "tree.h"
+#include "Symbols_Table.h"
 
-int write_start(FILE * anonymous);
+int write_start(FILE * anonymous, Symbols_Table * globals);
 
 int write_end(FILE * anonymous);
 
@@ -22,6 +23,6 @@ int write_number(FILE * anonymous, int val);
 
 int eval_expr(FILE * anonymous, Node * node);
 
-void cToAsm(Node *node, FILE * file);
+void cToAsm(Node *node, FILE * file, Program_Table* program);
 
 #endif
