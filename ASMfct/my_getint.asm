@@ -1,10 +1,9 @@
-section .data
-    negatif db '-'
 section .text
 global my_getint
 
 my_getint:
     mov r8, -1
+    mov r9b, '-'
 body:
     imul r8, -1
     push 0
@@ -14,7 +13,7 @@ body:
     mov rdi, 0 ; stdin
     syscall
     pop rax
-    cmp al, byte[negatif]
+    cmp al, r9b
     je body
     sub rax, 48
     cmp al, 10

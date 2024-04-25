@@ -184,7 +184,7 @@ int determine_size(Type type) {
         case INT: return 4;
         case CHAR: return 1;
         case VOID_: return 0;
-        case FUNCTION: return '?';
+        case FUNCTION: return 0;
         default: return -1;
     }
 }

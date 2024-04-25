@@ -23,7 +23,7 @@ loop:
     inc r8
     dec r9
     jmp loop
-check:    
+check:
     cmp r9, 15 ; Vérification
     je end
     cmp rdi, 0
