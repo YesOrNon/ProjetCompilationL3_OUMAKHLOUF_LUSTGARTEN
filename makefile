@@ -41,7 +41,6 @@ $(OBJDIR)/$(LEX).yy.c: $(SRCDIR)/$(LEX).lex
 $(OBJDIR)/compil.o: $(OBJDIR)/_anonymous.asm
 	nasm -f elf64 -g -o $@ $<
 
-
 clean:
 	rm -f $(BINDIR)/* $(OBJDIR)/* rep/rapport.txt bin/* obj/*
 

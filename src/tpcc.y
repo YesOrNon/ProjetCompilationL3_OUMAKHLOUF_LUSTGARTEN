@@ -1,5 +1,5 @@
 %{
-/* Projet Analyse Syntaxique 
+/* Projet Compilation
 LUSTGARTEN Leo | OUMAKHLOUF Selym */
 
 #include <stdio.h>
