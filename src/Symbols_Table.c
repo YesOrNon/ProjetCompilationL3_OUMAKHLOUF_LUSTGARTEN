@@ -283,7 +283,7 @@ int treeToSymbol(Node *node, Program_Table * table) {
                 else if (strcmp(node->data.ident, "getchar") == 0);
                 else if (strcmp(node->data.ident, "putchar") == 0);
                 else if (strcmp(node->data.ident, "putint") == 0);
-                else {printf("Error : %s is not defined\n", node->data.ident); return 1;}
+                else    {printf("Error : %s is not defined\n", node->data.ident); return 1;}
             }
             break;
         case affectation:
