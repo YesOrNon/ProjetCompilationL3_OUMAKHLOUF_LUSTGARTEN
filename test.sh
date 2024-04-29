@@ -9,7 +9,7 @@ for test in test/good/*
 do
     ((nbtest++))
     echo "  $test"
-    bin/tpcas < $test
+    bin/tpcc < $test
     return=$?
     echo "  Valeur de retour: $return"
     if [[ $return -ne 0 ]]
@@ -26,7 +26,7 @@ for test in test/syn-err/*
 do
     ((nbtest++))
     echo "  $test"
-    bin/tpcas < $test
+    bin/tpcc < $test
     return=$?
     echo "  Valeur de retour: $return"
     if [[ $return -ne 1 ]]

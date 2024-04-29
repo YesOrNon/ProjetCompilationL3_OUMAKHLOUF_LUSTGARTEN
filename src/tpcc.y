@@ -320,7 +320,7 @@ void afficherHelp(){
 }
 
 int main(int argc, char* argv[]){
-    int error;
+    int parse_error, tree_error;
 
     FILE * file = fopen("obj/_anonymous.asm", "w+");
     if (!file) {
@@ -353,18 +353,25 @@ int main(int argc, char* argv[]){
         }
     }
 
-    error = yyparse();
-    if (treeOption && !error) printTree(arbre);
-    if (treeToSymbol(arbre, S)) {
-        printf("early return\n");
+    parse_error = yyparse();
+    if (parse_error) {
+        printf("parse error : %d\n", parse_error);
+        return parse_error;
+    }
+
+    if (treeOption) printTree(arbre);
+    tree_error = treeToSymbol(arbre, S);
+
+    if (tree_error) {
+        printf("tree_error : %d\n", tree_error);
         deleteTree(arbre);
-        return error;
+        return 2;
     }
     cToAsm(arbre, file, S);
     print_program_table(S); // option -s à faire
     deleteTree(arbre);
-    printf("normal return\n");
-    return error;
+    printf("normal return, tree_error : %d, parse_error : %d\n", tree_error, parse_error);
+    return tree_error;
 }
 
 void yyerror(char * s){

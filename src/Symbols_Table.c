@@ -168,10 +168,17 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
         return CHAR;
 
     case ident_tab:
+        if (Lvalue) {
+            printf("%s[ ", node->data.ident);
+            expr_type(program, table, FIRSTCHILD(node), 0);
+            printf("] = ");
+            return expr_type(program, table, node->nextSibling, 0);
+        }
+        // à finir
         printf("%s[ ", node->data.ident);
         expr_type(program, table, FIRSTCHILD(node), 0);
-        printf("] = ");
-        return expr_type(program, table, node->nextSibling, 0);
+        printf("]");
+        return INT;
 
     default:
         printf("DEFAULT : %s\n", node->data.ident);
