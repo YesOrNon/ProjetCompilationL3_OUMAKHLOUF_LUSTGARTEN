@@ -10,7 +10,7 @@ LEXFLAGS=
 CFLAGS=-Wall -g -Wextra #-fsanitize=undefined
 LDFLAGS=-Wall -ll #-fsanitize=undefined
 BISONFLAGS=-d
-EXEC=tpcas
+EXEC=tpcc
 PARS=$(EXEC)
 LEX=$(EXEC)
 BINDIR=bin
