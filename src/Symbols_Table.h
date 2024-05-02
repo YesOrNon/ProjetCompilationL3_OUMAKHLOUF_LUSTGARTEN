@@ -26,7 +26,7 @@ typedef struct Symbol
 
 typedef struct Symbols_Table
 {
-    Symbol tab[INIT_SIZE];     /* array of symbols */
+    Symbol tab[INIT_SIZE];      /* array of symbols */
     long int index;             /* index of the next symbol */
 } Symbols_Table;
 
@@ -101,6 +101,11 @@ int isPresent(Symbols_Table* sym_table, char* symbol);
 */
 int isPresent_all(Program_Table * table, Node * node);
 
+/* Check if the name of a local variable is already used in parameters table
+ * Return 1 if the name is already used, 0 otherwise
+*/
+int check_name_conflict(Symbols_Table *local_vars_table, Symbols_Table *param_table);
+
 /* Return the type of the expr followed by the affection node
  * DEFAULT if assembling wrong types
 */
@@ -119,7 +124,7 @@ int get_last_adress(Symbols_Table* sym_table);
 // CORE FUNCTIONS //
 
 /* Add a symbol to the symbol table 
- * we suppose that the table as enough left for the symbol
+ * we suppose that the table as enough space left for the symbol
  * Return 1 if a problem occured, 0 otherwise
 */
 int add_symbol(Symbols_Table* sym_table, Symbol symbol);

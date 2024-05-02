@@ -105,20 +105,25 @@ int isPresent(Symbols_Table* sym_table, char* ident) {
 int isPresent_all(Program_Table *table, Node* node) {
     int globals = 0, header = 0, body = 0;
     Function_Table* func = table->functions;
-    // printf("CHECKING FOR IDENT : %s\n", node->data.ident);
     globals = isPresent(table->globals, node->data.ident);    
     if (func != NULL) {
         while (func->next != NULL) {
             func = func->next;
         }
-        // printf("\tCHECKING FOR IDENT IN FUNCTION : %s\n", func->ident);
         header = isPresent(func->header, node->data.ident);
         body = isPresent(func->body, node->data.ident);
     }
-    // if (globals)    printf("\tIn globals\n");
-    // if (header)     printf("\tIn header of %s\n", func->ident);
-    // if (body)       printf("\tIn body of %s\n", func->ident);
     return  body || header || globals;
+}
+
+int check_name_conflict(Symbols_Table *local_vars_table, Symbols_Table *param_table) {
+    for (int i = 0; i < local_vars_table->index; i++) {
+        if (isPresent(param_table, local_vars_table->tab[i].ident)) {
+            fprintf(stderr, "Semantic Error : identifier \"%s\" already exists in parameters\n", local_vars_table->tab[i].ident);
+            return 1;
+        }
+    }
+    return 0;
 }
 
 Type expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue) {
@@ -235,7 +240,7 @@ int get_last_adress(Symbols_Table* sym_table) {
 
 int add_symbol(Symbols_Table* sym_table, Symbol symbol) {
     if (isPresent(sym_table, symbol.ident)) {
-        fprintf(stderr, "Error : identifier already exists : %s\n", symbol.ident);
+        fprintf(stderr, "Semantic Error : identifier \"%s\" already exists\n", symbol.ident);
         return 1;
     }
     symbol.deplct = get_last_adress(sym_table) + symbol.size;
@@ -245,12 +250,21 @@ int add_symbol(Symbols_Table* sym_table, Symbol symbol) {
 
 int add_Symbols_to_Table(Node *node, Symbols_Table * table){
     if (node->label == type) {
-        if (add_symbol(table, make_symbol(FIRSTCHILD(node)->data.ident, string_to_type(node->data.comp))))  return 1;
-        if (FIRSTCHILD(node)->nextSibling) {
-            Node * sibling = FIRSTCHILD(node)->nextSibling;
-            while(sibling) {
-                if (add_symbol(table, make_symbol(sibling->data.ident, string_to_type(node->data.comp)))) return 1;
-                sibling = sibling->nextSibling;
+        if (FIRSTCHILD(node)->label == ident_tab) {
+            if (FIRSTCHILD(FIRSTCHILD(node))) {
+                Symbol tab = make_symbol(FIRSTCHILD(node)->data.ident, INT);
+                tab.size *= FIRSTCHILD(FIRSTCHILD(node))->data.num;
+                if (add_symbol(table, tab)) return 1;
+            }
+        }
+        else {
+            if (add_symbol(table, make_symbol(FIRSTCHILD(node)->data.ident, string_to_type(node->data.comp))))  return 1;
+            if (FIRSTCHILD(node)->nextSibling) {
+                Node * sibling = FIRSTCHILD(node)->nextSibling;
+                while(sibling) {
+                    if (add_symbol(table, make_symbol(sibling->data.ident, string_to_type(node->data.comp)))) return 1;
+                    sibling = sibling->nextSibling;
+                }
             }
         }
     }
@@ -270,6 +284,7 @@ int add_Function(Node *node, Function_Table * table){
     if (add_Symbols_to_Table(param, table->header))  return 1;
     Node * body = SECONDCHILD(node);
     if (add_Symbols_to_Table(FIRSTCHILD(body), table->body)) return 1;
+    if (check_name_conflict(table->body, table->header)) {fprintf(stderr, "of the function : %s\n", ident->data.ident); return 1;}
     return 0;
 }
 
@@ -299,7 +314,7 @@ int treeToSymbol(Node *node, Program_Table * table) {
                 else if (strcmp(node->data.ident, "getchar") == 0);
                 else if (strcmp(node->data.ident, "putchar") == 0);
                 else if (strcmp(node->data.ident, "putint") == 0);
-                else    {printf("Error : %s is not defined\n", node->data.ident); return 1;}
+                else    {printf("Semantic Error : \"%s\" is not defined\n", node->data.ident); return 1;}
             }
             break;
         case affectation:
@@ -312,7 +327,7 @@ int treeToSymbol(Node *node, Program_Table * table) {
             aff = expr_type(table, func, FIRSTCHILD(node), 1);
             printf("\n\tType : %s\n", type_to_string(aff));
             if (aff  == DEFAULT) {
-                fprintf(stderr, "\nError : Type of Expr\n");
+                fprintf(stderr, "\nSemantic Error : Type of Expr\n");
                 return 1;
             }
             break;
