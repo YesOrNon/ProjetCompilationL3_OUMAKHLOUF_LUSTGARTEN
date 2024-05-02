@@ -75,6 +75,17 @@ void free_Program_table(Program_Table* prog_table) {
 
 // USEFULL FUNCTIONS //
 
+Type get_return_type(Node *node, Function_Table * table, Program_Table * program) {
+    if (node->label == _return) {
+        return expr_type(program, table, FIRSTCHILD(node), 0);
+    }
+    for (Node *child = FIRSTCHILD(node); child != NULL; child = child->nextSibling) {
+        Type type = get_return_type(child, table, program);
+        if (type != DEFAULT) return type;
+    }
+    return DEFAULT;
+}
+
 Type find_Symbol_type(Symbols_Table * sym_table, char * ident) {
     for (int i = 0; i < sym_table->index; i++) {
         if (strcmp(sym_table->tab[i].ident, ident) == 0) {
@@ -149,7 +160,7 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
         else if (strcmp(node->data.ident, "getchar") == 0) return CHAR;
         else {
             right = find_Symbol_type(table->body, node->data.ident);
-            if (right == DEFAULT) left = find_Symbol_type(table->header, node->data.ident);
+            if (right == DEFAULT) right = find_Symbol_type(table->header, node->data.ident);
             if (right == DEFAULT) right = find_Symbol_type(program->globals, node->data.ident);
         }
         return right;
@@ -174,7 +185,8 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
         left = expr_type(program, table, FIRSTCHILD(node), 0);
         printf("%c ", node->data.byte);
         right = expr_type(program, table, SECONDCHILD(node), 0);
-        if (left == INT && right == INT) return INT;
+        printf("left : %s, right : %s\n", type_to_string(left), type_to_string(right));
+        if ((left == INT) && (right == INT)) {printf("ici\n"); return INT;}
         else return DEFAULT;
 
     case charac:
@@ -188,7 +200,6 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
             printf("] = ");
             return expr_type(program, table, node->nextSibling, 0);
         }
-        // à finir
         printf("%s[ ", node->data.ident);
         expr_type(program, table, FIRSTCHILD(node), 0);
         printf("]");
@@ -274,7 +285,7 @@ int add_Symbols_to_Table(Node *node, Symbols_Table * table){
     return 0;
 }
 
-int add_Function(Node *node, Function_Table * table){
+int add_Function(Node *node, Function_Table * table, Program_Table * program){
     Node * header = FIRSTCHILD(node);
     Node * type = FIRSTCHILD(header);
     Node * ident = SECONDCHILD(header);
@@ -285,6 +296,19 @@ int add_Function(Node *node, Function_Table * table){
     Node * body = SECONDCHILD(node);
     if (add_Symbols_to_Table(FIRSTCHILD(body), table->body)) return 1;
     if (check_name_conflict(table->body, table->header)) {fprintf(stderr, "of the function : %s\n", ident->data.ident); return 1;}
+    printf("\nFunction : %s\n", ident->data.ident);
+    Type ret = get_return_type(body, table, program);
+    printf("\n\tReturn type : %s\n", type_to_string(ret));
+    if (ret != table->type_ret && table->type_ret != VOID_) {
+        fprintf(stderr, "Semantic Error : Return type of the function \"%s\" is not correct\n", ident->data.ident);
+        fprintf(stderr, "Expected : %s\n", type_to_string(table->type_ret));
+        return 1;
+    }
+    if (strcmp(ident->data.ident, "main") == 0 && table->type_ret != INT) {
+        fprintf(stderr, "Semantic Error : Main function must return an INT\n");
+        fprintf(stderr, "Actual : %s\n", type_to_string(table->type_ret));
+        return 1;
+    }
     return 0;
 }
 
@@ -298,13 +322,13 @@ int treeToSymbol(Node *node, Program_Table * table) {
         case fonction:
             if (!table->functions){
                 table->functions = init_Func_table();
-                if (add_Function(node, table->functions))   return 1;
+                if (add_Function(node, table->functions, table))   return 1;
             }
             else{
                 Function_Table * tmp;
                 for (tmp = table->functions; tmp->next != NULL; tmp = tmp->next) {}
                 tmp->next = init_Func_table();
-                if (add_Function(node, tmp->next)) return 1;
+                if (add_Function(node, tmp->next, table)) return 1;
             }
             if (add_symbol(table->globals, make_symbol(SECONDCHILD(FIRSTCHILD(node))->data.ident, FUNCTION)))   return 1;
             break;

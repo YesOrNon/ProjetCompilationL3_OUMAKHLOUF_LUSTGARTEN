@@ -78,6 +78,11 @@ void free_Program_table(Program_Table* prog_table);
 
 // USEFULL FUNCTIONS //
 
+/* Return the type of the node
+ * Return DEFAULT if the node is not a type
+*/
+Type get_return_type(Node *node, Function_Table * table, Program_Table * program);
+
 /* Return the type of the ident if it corresponds to a symbol in sym_table
  * DEFAULT otherwise
 */
@@ -137,7 +142,7 @@ int add_Symbols_to_Table(Node *node, Symbols_Table * table);
 /* Add function to a function table
  * Returns 1 if a problem occured, 0 otherwise
 */
-int add_Function(Node *node, Function_Table * table);
+int add_Function(Node *node, Function_Table * table, Program_Table * program);
 
 /* Create the symbol table of a tree 
  * Returns 1 if a problem occured, 0 otherwise
