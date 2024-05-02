@@ -79,9 +79,9 @@ static const char * const txt_putint =
     "    jge .return\n"
     "    mov dl, '-'\n"
     "    mov [rsp+r9], dl\n"
-    "    inc r8\n"
     "    dec r9\n"
     ".return:\n"
+    "    inc r9\n"
     "    mov rax, 1\n"
     "    mov rdi, 1\n"
     "    add rsp, r9\n"
@@ -100,7 +100,7 @@ int write_start(FILE * anonymous, Symbols_Table* globals) {
     if (globals->index)
         res_static = get_last_adress(globals); //globals->tab[globals->index].size;
     return fprintf(anonymous,   "section .bss\n"
-                                "VarGlobals resb %d\n"
+                                "VarGlobals: resb %d\n"
                                 "section .text\n"
                                 "global _start\n"
                                 "%s"
@@ -119,33 +119,33 @@ int write_end(FILE * anonymous) {
     return fprintf(anonymous, "\tmov rax, 60\n\tmov rdi, 0\n\tsyscall\n");
 }
 
-int write_add(FILE * anonymous, Node * node) {
-    eval_expr(anonymous, FIRSTCHILD(node));
-    eval_expr(anonymous, SECONDCHILD(node));
+int write_add(FILE * anonymous, Node * node, Program_Table* program) {
+    eval_expr(anonymous, FIRSTCHILD(node), program);
+    eval_expr(anonymous, SECONDCHILD(node), program);
     return fprintf(anonymous, "\tpop r8\n\tpop r9\n\tadd r8, r9\n\tpush r8\n");
 }
 
-int write_sub(FILE * anonymous, Node * node) {
-    eval_expr(anonymous, FIRSTCHILD(node));
-    eval_expr(anonymous, SECONDCHILD(node));
+int write_sub(FILE * anonymous, Node * node, Program_Table* program) {
+    eval_expr(anonymous, FIRSTCHILD(node), program);
+    eval_expr(anonymous, SECONDCHILD(node), program);
     return fprintf(anonymous, "\tpop r9\n\tpop r8\n\tsub r8, r9\n\tpush r8\n");
 }
 
-int write_mul(FILE * anonymous, Node * node) {
-    eval_expr(anonymous, FIRSTCHILD(node));
-    eval_expr(anonymous, SECONDCHILD(node));
+int write_mul(FILE * anonymous, Node * node, Program_Table* program) {
+    eval_expr(anonymous, FIRSTCHILD(node), program);
+    eval_expr(anonymous, SECONDCHILD(node), program);
     return fprintf(anonymous, "\tpop r8\n\tpop r9\n\timul r8, r9\n\tpush r8\n");
 }
 
-int write_div(FILE * anonymous, Node * node) {
-    eval_expr(anonymous, FIRSTCHILD(node));
-    eval_expr(anonymous, SECONDCHILD(node));
+int write_div(FILE * anonymous, Node * node, Program_Table* program) {
+    eval_expr(anonymous, FIRSTCHILD(node), program);
+    eval_expr(anonymous, SECONDCHILD(node), program);
     return fprintf(anonymous, "\tpop r8\n\tmov rdx, 0\n\tpop rax\n\tidiv r8\n\tpush rax\n");
 }
 
-int write_mod(FILE * anonymous, Node * node) {
-    eval_expr(anonymous, FIRSTCHILD(node));
-    eval_expr(anonymous, SECONDCHILD(node));
+int write_mod(FILE * anonymous, Node * node, Program_Table* program) {
+    eval_expr(anonymous, FIRSTCHILD(node), program);
+    eval_expr(anonymous, SECONDCHILD(node), program);
     return fprintf(anonymous, "\tpop r8\n\tmov rdx, 0\n\tpop rax\n\tidiv r8\n\tpush rdx\n");
 }
 
@@ -153,7 +153,7 @@ int write_number(FILE * anonymous, int val) {
     return fprintf(anonymous, "\tpush %d\n", val);
 }
 
-int eval_expr(FILE * anonymous, Node * node) {
+int eval_expr(FILE * anonymous, Node * node, Program_Table* program) {
     switch (node->label) {
         case num:
             write_number(anonymous, node->data.num);
@@ -162,15 +162,25 @@ int eval_expr(FILE * anonymous, Node * node) {
             write_number(anonymous, -FIRSTCHILD(node)->data.num);
             break;
         case addsub:
-            if (node->data.byte == '+') {write_add(anonymous, node);}
-            else                        {write_sub(anonymous, node);}
+            if (node->data.byte == '+') {write_add(anonymous, node, program);}
+            else                        {write_sub(anonymous, node, program);}
             break;
         case divstar:
-            if (node->data.byte == '*')         {write_mul(anonymous, node);}
-            else if (node->data.byte == '/')    {write_div(anonymous, node);}
-            else                                {write_mod(anonymous, node);}
+            if (node->data.byte == '*')         {write_mul(anonymous, node, program);}
+            else if (node->data.byte == '/')    {write_div(anonymous, node, program);}
+            else                                {write_mod(anonymous, node, program);}
             break;
-        case ident:
+        case ident: { // Les accolades servent à pouvoir faire une déclaration dans un case (impossible sinon)
+            Symbol * tmp = find_Symbol(program->globals, node->data.ident);
+            if (tmp){
+                int indice = 0;
+                if (FIRSTCHILD(node)){
+                    eval_expr(anonymous, FIRSTCHILD(node), program);
+                    indice = 1;
+                }
+                write_global_value(anonymous, tmp->deplct, tmp->type, indice);
+            }
+        }
             break;
         case IDENTs:
             break;
@@ -178,6 +188,47 @@ int eval_expr(FILE * anonymous, Node * node) {
             break;
     }
     return 0;
+}
+
+int write_aff_global(FILE * anonymous, int deplct, Type type, int indice){
+    if (indice)
+        fprintf(anonymous, "\tpop r8\n");
+    else
+        fprintf(anonymous, "\tmov r8, 0\n");
+    fprintf(anonymous, "\tpop r9\n");
+    switch (type) {
+        case CHAR:
+            fprintf(anonymous, "\tmov byte[VarGlobals+%d+r8], r9b\n", deplct);
+            break;
+        case INT:
+            fprintf(anonymous, "\tmov dword[VarGlobals+%d+r8*4], r9d\n", deplct);
+            break;    
+        default:
+            return 0;
+            break;
+    }
+    return 1;
+}
+
+int write_global_value(FILE * anonymous, int deplct, Type type, int indice){
+    if (indice)
+        fprintf(anonymous, "\tpop r8\n");
+    else
+        fprintf(anonymous, "\tmov r8, 0\n");
+    fprintf(anonymous, "\tmov r9, 0\n");
+    switch (type) {
+        case CHAR:
+            fprintf(anonymous, "\tmov r9b, byte[VarGlobals+%d+r8]\n", deplct);
+            break;
+        case INT:
+            fprintf(anonymous, "\tmov r9d, dword[VarGlobals+%d+r8*4]\n", deplct);
+            break;
+        default:
+            return 0;
+            break;
+    }
+    fprintf(anonymous, "\tpush r9\n");
+    return 1;
 }
 
 void my_getint(FILE * file) {
@@ -200,7 +251,16 @@ void my_putchar(FILE * file) {
 void cToAsm(Node *node, FILE * file, Program_Table* program) {
     switch (node->label) {
         case affectation:
-            eval_expr(file, SECONDCHILD(node));
+            eval_expr(file, SECONDCHILD(node), program);
+            Symbol * tmp = find_Symbol(program->globals, FIRSTCHILD(node)->data.ident);
+            if (tmp){
+                int indice = 0;
+                if (FIRSTCHILD(FIRSTCHILD(node))){
+                    eval_expr(file, FIRSTCHILD(FIRSTCHILD(node)), program);
+                    indice = 1;
+                }
+                write_aff_global(file, tmp->deplct, tmp->type, indice);
+            }
             break;
         case fonction:
             if (strcmp(SECONDCHILD(FIRSTCHILD(node))->data.ident, "main") == 0) { /* main */
@@ -213,6 +273,10 @@ void cToAsm(Node *node, FILE * file, Program_Table* program) {
             else if (strcmp(node->data.ident, "putchar") == 0) my_putchar(file);
             else if (strcmp(node->data.ident, "putint") == 0) my_putint(file);
             break;
+        case _if:
+            if(!THIRDCHILD(node)){ // Si if sans else
+                // do stuff
+            }
         default:
             break;
     }

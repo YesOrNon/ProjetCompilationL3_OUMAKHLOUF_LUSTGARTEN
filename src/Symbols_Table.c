@@ -84,6 +84,15 @@ Type find_Symbol_type(Symbols_Table * sym_table, char * ident) {
     return DEFAULT;
 }
 
+Symbol * find_Symbol(Symbols_Table * sym_table, char * ident) {
+    for (int i = 0; i < sym_table->index; i++) {
+        if (strcmp(sym_table->tab[i].ident, ident) == 0) {
+            return &sym_table->tab[i];
+        }
+    }
+    return NULL;
+}
+
 int isPresent(Symbols_Table* sym_table, char* ident) {
     for (int i = 0; i < sym_table->index; i++) {
         if (strcmp(sym_table->tab[i].ident, ident) == 0) {

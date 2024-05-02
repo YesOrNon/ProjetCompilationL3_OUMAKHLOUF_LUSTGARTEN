@@ -30,9 +30,9 @@ check:
     jge return
     mov dl, '-'
     mov [rsp+r9], dl
-    inc r8
     dec r9
 return:
+    inc r9
     mov rax, 1 ; écrire
     mov rdi, 1 ; stdout
     add rsp, r9

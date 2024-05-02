@@ -83,6 +83,11 @@ void free_Program_table(Program_Table* prog_table);
 */
 Type find_Symbol_type(Symbols_Table * sym_table, char * ident);
 
+/* Return the symbol adress if the ident is a symbol ident in sym_table
+ * NULL otherwise
+*/
+Symbol *find_Symbol(Symbols_Table * sym_table, char * ident);
+
 /* Verify if a symbol with the same ident is already in the table 
  * Return 1 if the symbol is already in the table, 0 otherwise
 */
