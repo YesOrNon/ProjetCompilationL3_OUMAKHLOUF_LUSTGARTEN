@@ -231,6 +231,10 @@ int write_global_value(FILE * anonymous, int deplct, Type type, int indice){
     return 1;
 }
 
+int write_if(FILE * anonymous, Node *node, Program_Table* program){
+    // do stuff
+}
+
 void my_getint(FILE * file) {
     fprintf(file, "\tcall my_getint\n");
 }
@@ -275,7 +279,7 @@ void cToAsm(Node *node, FILE * file, Program_Table* program) {
             break;
         case _if:
             if(!THIRDCHILD(node)){ // Si if sans else
-                // do stuff
+                write_if(file, node, program);
             }
         default:
             break;

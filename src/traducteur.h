@@ -27,6 +27,8 @@ int write_aff_global(FILE * anonymous, int deplct, Type type, int indice);
 
 int write_global_value(FILE * anonymous, int deplct, Type type, int indice);
 
+int write_if(FILE * anonymous, Node *node, Program_Table* program);
+
 void cToAsm(Node *node, FILE * file, Program_Table* program);
 
 #endif
