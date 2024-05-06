@@ -5,7 +5,6 @@ void autre(int a) {
 int main(void) {
 
     int a;
-    autre(1);
-    a = autre(10);
+    a = autre(10); // void as an Rvalue
     return 1;
 }

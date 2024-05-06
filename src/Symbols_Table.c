@@ -137,9 +137,22 @@ int check_name_conflict(Symbols_Table *local_vars_table, Symbols_Table *param_ta
     return 0;
 }
 
+Type get_function(Program_Table* program, char *ident) {
+    Function_Table* temp = program->functions;
+    if (temp != NULL) {
+        if (strcmp(temp->ident, ident) == 0) return temp->type_ret;
+        while(temp->next != NULL) {
+            if (strcmp(temp->ident, ident) == 0) return temp->type_ret;
+            temp = temp->next;
+        }
+    }
+    return DEFAULT;
+}
+
 Type expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue) {
-    Type left, right;
+    Type left, right;    
     switch (node->label) {
+
     case ident:
         if (Lvalue) {
             printf("%s = ", node->data.ident);
@@ -151,14 +164,21 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
                 fprintf(stderr, "\nWarning : Operation between CHAR and INT variables\n");
                 return INT;
             }
-            else if (left == INT && right == CHAR) return INT;
-            else if (left == INT && right == INT) return INT;
+            else if (left == INT && right == CHAR)  return INT;
+            else if (left == INT && right == INT)   return INT;
             else if (left == CHAR && right == CHAR) return CHAR;
+            else if (right == VOID_)                return VOID_;
             else return DEFAULT;
         }
         else printf("%s ", node->data.ident);
         if (strcmp(node->data.ident, "getint") == 0) {printf("GETINT"); return INT;}
         else if (strcmp(node->data.ident, "getchar") == 0) return CHAR;
+        else if (FIRSTCHILD(node)){         // other functions
+            if (FIRSTCHILD(node)->label == args) {  // might be too much verification
+                right  = get_function(program, node->data.ident);
+                return right;
+            }
+        }
         else {
             right = find_Symbol_type(table->body, node->data.ident);
             if (right == DEFAULT) right = find_Symbol_type(table->header, node->data.ident);
@@ -205,6 +225,10 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
         expr_type(program, table, FIRSTCHILD(node), 0);
         printf("]");
         return INT;
+
+    case fonction:
+        printf("case fonction : %s\n", node->data.ident);
+        return INT; 
 
     default:
         printf("DEFAULT : %s\n", node->data.ident);
@@ -350,6 +374,10 @@ int treeToSymbol(Node *node, Program_Table * table) {
             printf("\n\tType : %s\n", type_to_string(aff));
             if (aff  == DEFAULT) {
                 fprintf(stderr, "\nSemantic Error : Type of Expr\n");
+                return 1;
+            }
+            else if (aff == VOID_) {
+                fprintf(stderr, "A function of type \"void\" is used as an Rvalue\n");
                 return 1;
             }
             break;

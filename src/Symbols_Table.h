@@ -111,6 +111,12 @@ int isPresent_all(Program_Table * table, Node * node);
 */
 int check_name_conflict(Symbols_Table *local_vars_table, Symbols_Table *param_table);
 
+/* If a function with the name 'ident' exists 
+    * Returns its type
+ * Else returns DEFAULT
+*/
+Type get_function(Program_Table* program, char *ident);
+
 /* Return the type of the expr followed by the affection node
  * DEFAULT if assembling wrong types
 */
