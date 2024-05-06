@@ -147,10 +147,11 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
             if (left == DEFAULT) left = find_Symbol_type(table->header, node->data.ident);
             if (left == DEFAULT) left = find_Symbol_type(program->globals, node->data.ident);
             right = expr_type(program, table, node->nextSibling, 0);
-            if ((left == CHAR && right == INT) || (left == INT && right == CHAR)) {
+            if (left == CHAR && right == INT) {
                 fprintf(stderr, "\nWarning : Operation between CHAR and INT variables\n");
                 return INT;
             }
+            else if (left == INT && right == CHAR) return INT;
             else if (left == INT && right == INT) return INT;
             else if (left == CHAR && right == CHAR) return CHAR;
             else return DEFAULT;
@@ -299,16 +300,13 @@ int add_Function(Node *node, Function_Table * table, Program_Table * program){
     printf("\nFunction : %s\n", ident->data.ident);
     Type ret = get_return_type(body, table, program);
     printf("\n\tReturn type : %s\n", type_to_string(ret));
-    if (ret != table->type_ret && table->type_ret != VOID_) {
-        fprintf(stderr, "Semantic Error : Return type of the function \"%s\" is not correct\n", ident->data.ident);
-        fprintf(stderr, "Expected : %s\n", type_to_string(table->type_ret));
-        return 1;
-    }
-    if (strcmp(ident->data.ident, "main") == 0 && table->type_ret != INT) {
-        fprintf(stderr, "Semantic Error : Main function must return an INT\n");
+    if ((strcmp(ident->data.ident, "main") == 0) && table->type_ret != INT && ret != INT) {
+        fprintf(stderr, "Semantic Error : \"main\" function must have the type \"iny\" and return an \"int\"\n");
         fprintf(stderr, "Actual : %s\n", type_to_string(table->type_ret));
         return 1;
     }
+    else if (ret == INT && table->type_ret == CHAR)
+        fprintf(stderr, "Warning : Function \"%s\" has the type \"char\" and returns an \"int\"\n", ident->data.ident);
     return 0;
 }
 
@@ -364,7 +362,6 @@ int treeToSymbol(Node *node, Program_Table * table) {
     for (Node *child = FIRSTCHILD(node); child != NULL; child = child->nextSibling) {
             if (treeToSymbol(child, table)) return 1;
     }
-
     return 0;
 }
 

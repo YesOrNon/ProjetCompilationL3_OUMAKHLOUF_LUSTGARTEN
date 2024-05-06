@@ -1,0 +1,16 @@
+char test(void) {
+    return 97;
+}
+
+int autre(void) {
+    return 13;
+}
+
+
+int main(void) {
+
+    int a;
+
+    a = autre();
+    return 1;
+}
