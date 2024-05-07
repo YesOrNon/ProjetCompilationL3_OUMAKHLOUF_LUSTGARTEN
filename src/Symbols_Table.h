@@ -111,12 +111,15 @@ int isPresent_all(Program_Table * table, Node * node);
 */
 int check_name_conflict(Symbols_Table *local_vars_table, Symbols_Table *param_table);
 
-/* Count the number of args used */
-int count_args(Node * node);
+/* Count the number of args used checks the types of the arguments
+ * If the types are correct, return the number of args used
+ * Else return -1
+*/
+int count_args(Node * node, Program_Table * program, Function_Table * table);
 
 /* Compare the number of args used (`count`) 
- * with the number of args that the function takes (`actual`)
- * Return 1 if  `actual` == `count`, else 0 
+ * with the number of args that the function takes (`signature`)
+ * Return 1 if `signature` == `count`, else 0 
 */
 int function_parameters(Function_Table * table, int count);
 
@@ -125,11 +128,6 @@ int function_parameters(Function_Table * table, int count);
  * Else returns NULL
 */
 Function_Table * get_function(Program_Table* program, char *ident);
-
-/* Return the type of the expr followed by the affection node
- * DEFAULT if assembling wrong types
-*/
-Type expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue);
 
 /* Return the size (in bytes) based on the type */
 int determine_size(Type type);
@@ -142,6 +140,11 @@ int get_last_adress(Symbols_Table* sym_table);
 
 
 // CORE FUNCTIONS //
+
+/* Return the type of the expr followed by the affection node
+ * DEFAULT if assembling wrong types
+*/
+Type expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue);
 
 /* Add a symbol to the symbol table 
  * we suppose that the table as enough space left for the symbol

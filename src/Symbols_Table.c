@@ -5,7 +5,6 @@
 #include "../try.h"
 #include <stdbool.h>
 
-// using try might be a bad idea, stops the program if malloc fails
 
 // INIT //
 
@@ -79,7 +78,7 @@ Type get_return_type(Node *node, Function_Table * table, Program_Table * program
     if (node->label == _return) {
         return expr_type(program, table, FIRSTCHILD(node), 0);
     }
-    for (Node *child = FIRSTCHILD(node); child != NULL; child = child->nextSibling) {
+    for (Node *child = FIRSTCHILD(node); child != NULL && table->type_ret != VOID_; child = child->nextSibling) {
         Type type = get_return_type(child, table, program);
         if (type != DEFAULT) return type;
     }
@@ -149,15 +148,24 @@ Function_Table * get_function(Program_Table* program, char *ident) {
     return NULL;
 }
 
-int count_args(Node * node) {
-    int i = 0;
+int count_args(Node * node, Program_Table * program, Function_Table * table) {
+    int i = 0; Type type;
     Node * child = FIRSTCHILD(node);
-    while (child != NULL)   {child = child->nextSibling; i++;}
+    while (child != NULL)   {
+        type = expr_type(program, table, child, 0);
+        if (type != table->header->tab[i].type) {
+            fprintf(stderr, "Semantic Error : Type of argument \"%s\" in function \"%s\"\n", child->data.ident, table->ident);
+            fprintf(stderr, "Expected : %s, Actual : %s\n", type_to_string(table->header->tab[i].type), type_to_string(type));
+            return -1;
+        }
+        child = child->nextSibling;
+        i++;
+        }
     return i;
 }
 
-
 int function_parameters(Function_Table * table, int count) {
+    if (count == -1) return 0;
     int signature = table->header->index;
     int message = signature - count;
     if (message > 0) 
@@ -167,12 +175,50 @@ int function_parameters(Function_Table * table, int count) {
     return signature == count;
 }
 
+int determine_size(Type type) {
+    switch (type) {
+        case INT: return 4;
+        case CHAR: return 1;
+        case VOID_: return 0;
+        case FUNCTION: return 0;
+        default: return -1;
+    }
+}
+
+char* type_to_string(Type type) {
+    switch (type) {
+        case INT: return "INT";
+        case CHAR: return "CHAR";
+        case VOID_: return "VOID";
+        case FUNCTION: return "FUNCTION";
+        default: return "UNKNOWN";
+    }
+}
+
+Type string_to_type(char * type) {
+    switch (type[0]) {
+        case 'i': return INT;
+        case 'c': return CHAR;
+        case 'v': return VOID_;
+        case 'f': return FUNCTION;
+        default: return DEFAULT;
+    }
+}
+
+int get_last_adress(Symbols_Table* sym_table) {
+    if (sym_table->index == 0) {return 0;}
+    return sym_table->tab[sym_table->index - 1].deplct;
+}
+
+
+// CORE FUNCTIONS //
+
 Type expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue) {
     Type left, right;    
     switch (node->label) {
 
     case ident:
-        if (Lvalue) {
+        if (Lvalue) {   // Lvalue
             printf("%s = ", node->data.ident);
             left = find_Symbol_type(table->body, node->data.ident);
             if (left == DEFAULT) left = find_Symbol_type(table->header, node->data.ident);
@@ -188,18 +234,15 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
             else if (right == VOID_)                return VOID_;
             else return DEFAULT;
         }
-        else printf("%s ", node->data.ident);
+        else printf("%s ", node->data.ident);   // Rvalue
         if (strcmp(node->data.ident, "getint") == 0) {printf("GETINT"); return INT;}
         else if (strcmp(node->data.ident, "getchar") == 0) return CHAR;
-        else if (FIRSTCHILD(node)){         // other functions
-            if (FIRSTCHILD(node)->label == args) {
-                table = get_function(program, node->data.ident);
-                right = table->type_ret;
-                // check number of parameters
-                printf("làààààààààààààààààààààààààààà\n");
-                if (!function_parameters(table, count_args(node->firstChild))) exit(EXIT_FAILURE);
-                return right;
-            }
+        else if ((FIRSTCHILD(node) && FIRSTCHILD(node)->label == args) || (node->nextSibling && node->nextSibling->label == args)){  // Function call
+            table = get_function(program, node->data.ident);
+            right = table->type_ret;
+            if (FIRSTCHILD(node) && !function_parameters(table, count_args(node->firstChild, program, table))) right = DEFAULT;
+            else if (node->nextSibling && !function_parameters(table, count_args(node->nextSibling, program, table))) right = DEFAULT;
+            return right;
         }
         else {
             right = find_Symbol_type(table->body, node->data.ident);
@@ -253,44 +296,6 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
         return DEFAULT; 
     }
 }
-
-int determine_size(Type type) {
-    switch (type) {
-        case INT: return 4;
-        case CHAR: return 1;
-        case VOID_: return 0;
-        case FUNCTION: return 0;
-        default: return -1;
-    }
-}
-
-char* type_to_string(Type type) {
-    switch (type) {
-        case INT: return "INT";
-        case CHAR: return "CHAR";
-        case VOID_: return "VOID";
-        case FUNCTION: return "FUNCTION";
-        default: return "UNKNOWN";
-    }
-}
-
-Type string_to_type(char * type) {
-    switch (type[0]) {
-        case 'i': return INT;
-        case 'c': return CHAR;
-        case 'v': return VOID_;
-        case 'f': return FUNCTION;
-        default: return DEFAULT;
-    }
-}
-
-int get_last_adress(Symbols_Table* sym_table) {
-    if (sym_table->index == 0) {return 0;}
-    return sym_table->tab[sym_table->index - 1].deplct;
-}
-
-
-// CORE FUNCTIONS //
 
 int add_symbol(Symbols_Table* sym_table, Symbol symbol) {
     if (isPresent(sym_table, symbol.ident)) {
@@ -378,7 +383,7 @@ int treeToSymbol(Node *node, Program_Table * table) {
                 else if (strcmp(node->data.ident, "getchar") == 0);
                 else if (strcmp(node->data.ident, "putchar") == 0);
                 else if (strcmp(node->data.ident, "putint") == 0);
-                else    {printf("Semantic Error : \"%s\" is not defined\n", node->data.ident); return 1;}
+                else    {fprintf(stderr, "Semantic Error : \"%s\" is not defined\n", node->data.ident); return 1;}
             }
             break;
         case affectation:
@@ -408,9 +413,9 @@ int treeToSymbol(Node *node, Program_Table * table) {
             printf("IDENTS : %s\n", node->firstChild->data.ident);
             type = expr_type(table, func, FIRSTCHILD(node), 0);
             printf("\n\tType : %s\n", type_to_string(type));
-            printf("fin idents\n");
-            if (type == FUNCTION) {
-                printf("ciiicciciicicici\n");
+            if (type == DEFAULT) {
+                fprintf(stderr, "\nSemantic Error : Type of Expr\n");
+                return 1;
             }
             break;
         default:

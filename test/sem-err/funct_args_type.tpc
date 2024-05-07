@@ -9,7 +9,7 @@ void blabla(void) {
 int main(void) {
 
     int a;
-    blabla(120);
-    a = 10 + 12;
+    blabla();
+    a = autre('a');
     return 1;
 }
