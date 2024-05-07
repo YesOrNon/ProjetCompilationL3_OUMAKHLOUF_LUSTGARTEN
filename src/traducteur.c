@@ -94,6 +94,7 @@ static const char * const txt_putint =
     "    ret\n";
 
 int main_flag = 0;
+int indice_condition = 0;
 
 int write_start(FILE * anonymous, Symbols_Table* globals) {
     int res_static = 0;
@@ -116,7 +117,7 @@ int write_start(FILE * anonymous, Symbols_Table* globals) {
 }
 
 int write_end(FILE * anonymous) {
-    return fprintf(anonymous, "\tmov rax, 60\n\tmov rdi, 0\n\tsyscall\n");
+    return fprintf(anonymous, ".return\n\tmov rax, 60\n\tmov rdi, 0\n\tsyscall\n");
 }
 
 int write_add(FILE * anonymous, Node * node, Program_Table* program) {
@@ -178,7 +179,7 @@ int eval_expr(FILE * anonymous, Node * node, Program_Table* program) {
                     eval_expr(anonymous, FIRSTCHILD(node), program);
                     indice = 1;
                 }
-                write_global_value(anonymous, tmp->deplct, tmp->type, indice);
+                write_global_value(anonymous, tmp, indice);
             }
         }
             break;
@@ -190,18 +191,18 @@ int eval_expr(FILE * anonymous, Node * node, Program_Table* program) {
     return 0;
 }
 
-int write_aff_global(FILE * anonymous, int deplct, Type type, int indice){
+int write_aff_global(FILE * anonymous, Symbol * tmp, int indice){
     if (indice)
         fprintf(anonymous, "\tpop r8\n");
     else
         fprintf(anonymous, "\tmov r8, 0\n");
     fprintf(anonymous, "\tpop r9\n");
-    switch (type) {
+    switch (tmp->type) {
         case CHAR:
-            fprintf(anonymous, "\tmov byte[VarGlobals+%d+r8], r9b\n", deplct);
+            fprintf(anonymous, "\tmov byte[VarGlobals+%ld+r8], r9b\n", tmp->deplct - tmp->size);
             break;
         case INT:
-            fprintf(anonymous, "\tmov dword[VarGlobals+%d+r8*4], r9d\n", deplct);
+            fprintf(anonymous, "\tmov dword[VarGlobals+%ld+r8*4], r9d\n", tmp->deplct - tmp->size);
             break;    
         default:
             return 0;
@@ -210,18 +211,18 @@ int write_aff_global(FILE * anonymous, int deplct, Type type, int indice){
     return 1;
 }
 
-int write_global_value(FILE * anonymous, int deplct, Type type, int indice){
+int write_global_value(FILE * anonymous, Symbol * tmp, int indice){
     if (indice)
         fprintf(anonymous, "\tpop r8\n");
     else
         fprintf(anonymous, "\tmov r8, 0\n");
     fprintf(anonymous, "\tmov r9, 0\n");
-    switch (type) {
+    switch (tmp->type) {
         case CHAR:
-            fprintf(anonymous, "\tmov r9b, byte[VarGlobals+%d+r8]\n", deplct);
+            fprintf(anonymous, "\tmov r9b, byte[VarGlobals+%ld+r8]\n", tmp->deplct - tmp->size);
             break;
         case INT:
-            fprintf(anonymous, "\tmov r9d, dword[VarGlobals+%d+r8*4]\n", deplct);
+            fprintf(anonymous, "\tmov r9d, dword[VarGlobals+%ld+r8*4]\n", tmp->deplct - tmp->size);
             break;
         default:
             return 0;
@@ -231,9 +232,30 @@ int write_global_value(FILE * anonymous, int deplct, Type type, int indice){
     return 1;
 }
 
-// int write_if(FILE * anonymous, Node *node, Program_Table* program){
-//     // do stuff
-// }
+int write_if(FILE * anonymous, Node *node, Program_Table* program){
+    eval_expr(anonymous, FIRSTCHILD(node), program);
+    indice_condition++;
+    fprintf(anonymous,  "\tpop r8\n"
+                        "\tcmp r8, 0\n"
+                        "\tje .jump_to_endif%d\n",
+                        indice_condition);
+    cToAsm(SECONDCHILD(node), anonymous,  program);
+    fprintf(anonymous, ".jump_to_endif%d\n", indice_condition);
+    return 1;
+}
+
+int write_if_else(FILE * anonymous, Node *node, Program_Table* program){
+    eval_expr(anonymous, FIRSTCHILD(node), program);
+    indice_condition++;
+    fprintf(anonymous,  "\tpop r8\n"
+                        "\tcmp r8, 0\n"
+                        "\tje .jump_to_endif%d\n",
+                        indice_condition);
+    cToAsm(SECONDCHILD(node), anonymous,  program);
+    fprintf(anonymous, ".jump_to_endif%d\n", indice_condition);
+    cToAsm(SECONDCHILD(node), anonymous,  program);
+    return 1;
+}
 
 void my_getint(FILE * file) {
     fprintf(file, "\tcall my_getint\n");
@@ -263,7 +285,7 @@ void cToAsm(Node *node, FILE * file, Program_Table* program) {
                     eval_expr(file, FIRSTCHILD(FIRSTCHILD(node)), program);
                     indice = 1;
                 }
-                write_aff_global(file, tmp->deplct, tmp->type, indice);
+                write_aff_global(file, tmp, indice);
             }
             break;
         case fonction:
@@ -278,9 +300,13 @@ void cToAsm(Node *node, FILE * file, Program_Table* program) {
             else if (strcmp(node->data.ident, "putint") == 0) my_putint(file);
             break;
         case _if:
-            if(!THIRDCHILD(node)){ // Si if sans else
-                // write_if(file, node, program);
+            if(!node->nextSibling || node->nextSibling->label != _else){ // Si if sans else
+                write_if(file, node, program);
             }
+            else{
+                write_if_else(file, node, program);
+            }
+            return;
         default:
             break;
     }

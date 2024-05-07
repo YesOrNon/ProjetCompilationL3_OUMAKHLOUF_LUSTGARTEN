@@ -1,0 +1,14 @@
+int i;
+int j;
+
+int main(void) {
+    i = 5;
+    if (i) {
+        i = 10;
+    }
+    else {
+        i = 15;
+    }
+    j = 0;
+    return i;
+}
