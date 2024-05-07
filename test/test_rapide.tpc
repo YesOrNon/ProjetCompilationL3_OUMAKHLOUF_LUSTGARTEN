@@ -1,11 +1,10 @@
-void autre(int a) {
+int autre(int a) {
     return 13;
 }
 
 int main(void) {
 
     int a;
-    autre(1);
-    a = autre(10);
+    autre(10, 20);
     return 1;
 }

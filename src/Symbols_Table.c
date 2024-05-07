@@ -137,16 +137,34 @@ int check_name_conflict(Symbols_Table *local_vars_table, Symbols_Table *param_ta
     return 0;
 }
 
-Type get_function(Program_Table* program, char *ident) {
+Function_Table * get_function(Program_Table* program, char *ident) {
     Function_Table* temp = program->functions;
     if (temp != NULL) {
-        if (strcmp(temp->ident, ident) == 0) return temp->type_ret;
+        if (strcmp(temp->ident, ident) == 0) return temp;
         while(temp->next != NULL) {
-            if (strcmp(temp->ident, ident) == 0) return temp->type_ret;
+            if (strcmp(temp->ident, ident) == 0) return temp;
             temp = temp->next;
         }
     }
-    return DEFAULT;
+    return NULL;
+}
+
+int count_args(Node * node) {
+    int i = 0;
+    Node * child = FIRSTCHILD(node);
+    while (child != NULL)   {child = child->nextSibling; i++;}
+    return i;
+}
+
+
+int function_parameters(Function_Table * table, int count) {
+    int signature = table->header->index;
+    int message = signature - count;
+    if (message > 0) 
+        fprintf(stderr, "Semantic Error : Missing %d arguments in the function \"%s\"\n", message, table->ident);
+    if (message < 0)
+        fprintf(stderr, "Semantic Error : Too many arguments in the function \"%s\"\n", table->ident);
+    return signature == count;
 }
 
 Type expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue) {
@@ -174,8 +192,12 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
         if (strcmp(node->data.ident, "getint") == 0) {printf("GETINT"); return INT;}
         else if (strcmp(node->data.ident, "getchar") == 0) return CHAR;
         else if (FIRSTCHILD(node)){         // other functions
-            if (FIRSTCHILD(node)->label == args) {  // might be too much verification
-                right  = get_function(program, node->data.ident);
+            if (FIRSTCHILD(node)->label == args) {
+                table = get_function(program, node->data.ident);
+                right = table->type_ret;
+                // check number of parameters
+                printf("làààààààààààààààààààààààààààà\n");
+                if (!function_parameters(table, count_args(node->firstChild))) exit(EXIT_FAILURE);
                 return right;
             }
         }
@@ -225,10 +247,6 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
         expr_type(program, table, FIRSTCHILD(node), 0);
         printf("]");
         return INT;
-
-    case fonction:
-        printf("case fonction : %s\n", node->data.ident);
-        return INT; 
 
     default:
         printf("DEFAULT : %s\n", node->data.ident);
@@ -335,7 +353,7 @@ int add_Function(Node *node, Function_Table * table, Program_Table * program){
 }
 
 int treeToSymbol(Node *node, Program_Table * table) {
-    Type aff;
+    Type type;
     Function_Table* func = table->functions;
     switch (node->label) {
         case program:
@@ -370,19 +388,30 @@ int treeToSymbol(Node *node, Program_Table * table) {
                 }
             }
             printf("\naffectation : ");
-            aff = expr_type(table, func, FIRSTCHILD(node), 1);
-            printf("\n\tType : %s\n", type_to_string(aff));
-            if (aff  == DEFAULT) {
+            type = expr_type(table, func, FIRSTCHILD(node), 1);
+            printf("\n\tType : %s\n", type_to_string(type));
+            if (type == DEFAULT) {
                 fprintf(stderr, "\nSemantic Error : Type of Expr\n");
                 return 1;
             }
-            else if (aff == VOID_) {
+            else if (type == VOID_) {
                 fprintf(stderr, "A function of type \"void\" is used as an Rvalue\n");
                 return 1;
             }
             break;
         case IDENTs:
+            if (func != NULL) {
+                while (func->next != NULL) {
+                    func = func->next;
+                }
+            }
             printf("IDENTS : %s\n", node->firstChild->data.ident);
+            type = expr_type(table, func, FIRSTCHILD(node), 0);
+            printf("\n\tType : %s\n", type_to_string(type));
+            printf("fin idents\n");
+            if (type == FUNCTION) {
+                printf("ciiicciciicicici\n");
+            }
             break;
         default:
             break;

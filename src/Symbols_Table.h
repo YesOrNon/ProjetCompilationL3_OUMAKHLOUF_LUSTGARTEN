@@ -111,11 +111,20 @@ int isPresent_all(Program_Table * table, Node * node);
 */
 int check_name_conflict(Symbols_Table *local_vars_table, Symbols_Table *param_table);
 
-/* If a function with the name 'ident' exists 
-    * Returns its type
- * Else returns DEFAULT
+/* Count the number of args used */
+int count_args(Node * node);
+
+/* Compare the number of args used (`count`) 
+ * with the number of args that the function takes (`actual`)
+ * Return 1 if  `actual` == `count`, else 0 
 */
-Type get_function(Program_Table* program, char *ident);
+int function_parameters(Function_Table * table, int count);
+
+/* If a function with the name 'ident' exists 
+    * Returns the function
+ * Else returns NULL
+*/
+Function_Table * get_function(Program_Table* program, char *ident);
 
 /* Return the type of the expr followed by the affection node
  * DEFAULT if assembling wrong types
