@@ -95,6 +95,7 @@ static const char * const txt_putint =
 
 int main_flag = 0;
 int indice_condition = 0;
+int indice_comp = 0;
 
 int write_start(FILE * anonymous, Symbols_Table* globals) {
     int res_static = 0;
@@ -154,6 +155,32 @@ int write_number(FILE * anonymous, int val) {
     return fprintf(anonymous, "\tpush %d\n", val);
 }
 
+int write_eq_order(FILE * anonymous, Node *node, Program_Table* program){
+    eval_expr(anonymous, FIRSTCHILD(node), program);
+    eval_expr(anonymous, SECONDCHILD(node), program);
+    indice_comp++;
+    fprintf(anonymous,  "\tpop r9 ; start eq/order\n"
+                        "\tpop r8\n"
+                        "\tcmp r9, r8\n");
+    if (!strcmp(node->data.comp, "==")) {fprintf(anonymous,  "\tje");}
+    if (!strcmp(node->data.comp, "!=")) {fprintf(anonymous,  "\tjne");}
+    if (!strcmp(node->data.comp, "<=")) {fprintf(anonymous,  "\tjle");}
+    if (!strcmp(node->data.comp, ">=")) {fprintf(anonymous,  "\tjge");}
+    if (!strcmp(node->data.comp, "<")) {fprintf(anonymous,  "\tjl");}
+    if (!strcmp(node->data.comp, ">")) {fprintf(anonymous,  "\tjg");}
+    fprintf(anonymous,  " .true%d\n"
+                        "\tpush 0\n"
+                        "\tjmp .fincomp%d\n"
+                        ".true%d\n"
+                        "\tpush 1\n"
+                        ".fincomp%d ; end eq/order\n",
+                        indice_comp,
+                        indice_comp,
+                        indice_comp,
+                        indice_comp);
+    return 1;
+}
+
 int eval_expr(FILE * anonymous, Node * node, Program_Table* program) {
     switch (node->label) {
         case num:
@@ -170,6 +197,10 @@ int eval_expr(FILE * anonymous, Node * node, Program_Table* program) {
             if (node->data.byte == '*')         {write_mul(anonymous, node, program);}
             else if (node->data.byte == '/')    {write_div(anonymous, node, program);}
             else                                {write_mod(anonymous, node, program);}
+            break;
+        case eq:
+        case order:
+            write_eq_order(anonymous, node, program);
             break;
         case ident: { // Les accolades servent à pouvoir faire une déclaration dans un case (impossible sinon)
             Symbol * tmp = find_Symbol(program->globals, node->data.ident);
@@ -193,16 +224,16 @@ int eval_expr(FILE * anonymous, Node * node, Program_Table* program) {
 
 int write_aff_global(FILE * anonymous, Symbol * tmp, int indice){
     if (indice)
-        fprintf(anonymous, "\tpop r8\n");
+        fprintf(anonymous, "\tpop r8 ; start aff global\n");
     else
-        fprintf(anonymous, "\tmov r8, 0\n");
+        fprintf(anonymous, "\tmov r8, 0 ; start aff global\n");
     fprintf(anonymous, "\tpop r9\n");
     switch (tmp->type) {
         case CHAR:
-            fprintf(anonymous, "\tmov byte[VarGlobals+%ld+r8], r9b\n", tmp->deplct - tmp->size);
+            fprintf(anonymous, "\tmov byte[VarGlobals+%ld+r8], r9b ; end aff global\n", tmp->deplct - tmp->size);
             break;
         case INT:
-            fprintf(anonymous, "\tmov dword[VarGlobals+%ld+r8*4], r9d\n", tmp->deplct - tmp->size);
+            fprintf(anonymous, "\tmov dword[VarGlobals+%ld+r8*4], r9d ; end aff global\n", tmp->deplct - tmp->size);
             break;    
         default:
             return 0;
@@ -213,9 +244,9 @@ int write_aff_global(FILE * anonymous, Symbol * tmp, int indice){
 
 int write_global_value(FILE * anonymous, Symbol * tmp, int indice){
     if (indice)
-        fprintf(anonymous, "\tpop r8\n");
+        fprintf(anonymous, "\tpop r8 ; start eval global\n");
     else
-        fprintf(anonymous, "\tmov r8, 0\n");
+        fprintf(anonymous, "\tmov r8, 0 ; start eval global\n");
     fprintf(anonymous, "\tmov r9, 0\n");
     switch (tmp->type) {
         case CHAR:
@@ -228,32 +259,26 @@ int write_global_value(FILE * anonymous, Symbol * tmp, int indice){
             return 0;
             break;
     }
-    fprintf(anonymous, "\tpush r9\n");
+    fprintf(anonymous, "\tpush r9 ; end eval global\n");
     return 1;
 }
 
-int write_if(FILE * anonymous, Node *node, Program_Table* program){
+int write_if(FILE * anonymous, Node *node, Program_Table* program, int _else){
     eval_expr(anonymous, FIRSTCHILD(node), program);
     indice_condition++;
-    fprintf(anonymous,  "\tpop r8\n"
+    fprintf(anonymous,  "\tpop r8 ; start if\n"
                         "\tcmp r8, 0\n"
                         "\tje .jump_to_endif%d\n",
                         indice_condition);
     cToAsm(SECONDCHILD(node), anonymous,  program);
-    fprintf(anonymous, ".jump_to_endif%d\n", indice_condition);
+    if (_else) {fprintf(anonymous, "\tjmp .jump_to_endelse%d\n", indice_condition);}
+    fprintf(anonymous, ".jump_to_endif%d ; end if\n", indice_condition);
     return 1;
 }
 
-int write_if_else(FILE * anonymous, Node *node, Program_Table* program){
-    eval_expr(anonymous, FIRSTCHILD(node), program);
-    indice_condition++;
-    fprintf(anonymous,  "\tpop r8\n"
-                        "\tcmp r8, 0\n"
-                        "\tje .jump_to_endif%d\n",
-                        indice_condition);
-    cToAsm(SECONDCHILD(node), anonymous,  program);
-    fprintf(anonymous, ".jump_to_endif%d\n", indice_condition);
-    cToAsm(SECONDCHILD(node), anonymous,  program);
+int write_else(FILE * anonymous, Node *node, Program_Table* program){
+    cToAsm(FIRSTCHILD(node), anonymous,  program);
+    fprintf(anonymous, ".jump_to_endelse%d ; end else\n", indice_condition);
     return 1;
 }
 
@@ -301,11 +326,14 @@ void cToAsm(Node *node, FILE * file, Program_Table* program) {
             break;
         case _if:
             if(!node->nextSibling || node->nextSibling->label != _else){ // Si if sans else
-                write_if(file, node, program);
+                write_if(file, node, program, 0);
             }
             else{
-                write_if_else(file, node, program);
+                write_if(file, node, program, 1);
             }
+            return;
+        case _else:
+            write_else(file, node, program);
             return;
         default:
             break;

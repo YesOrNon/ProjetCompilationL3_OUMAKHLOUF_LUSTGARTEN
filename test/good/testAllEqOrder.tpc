@@ -1,0 +1,25 @@
+int i;
+int j;
+
+int main(void) {
+    i = 5;
+    if (i == 5){
+        j = 5;
+    }
+    if (i != 5){
+        j = 5;
+    }
+    if (i < 5){
+        j = 5;
+    }
+    if (i <= 5){
+        j = 5;
+    }
+    if (i > 5){
+        j = 5;
+    }
+    if (i >= 5){
+        j = 5;
+    }
+    return i;
+}
