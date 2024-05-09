@@ -138,6 +138,11 @@ char* type_to_string(Type type);
 /* Return the last adress of the symbol table */
 int get_last_adress(Symbols_Table* sym_table);
 
+/* case ident from the function expr_type 
+ * Return the type of the node which has the label `ident`
+*/
+Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue);
+
 
 // CORE FUNCTIONS //
 

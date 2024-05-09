@@ -5,9 +5,9 @@ LUSTGARTEN Leo | OUMAKHLOUF Selym */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../src/Symbols_Table.h"
-#include "../src/traducteur.h"
-#include "../src/exit_functions.h"
+#include "../include/Symbols_Table.h"
+#include "../include/traducteur.h"
+#include "../include/exit_functions.h"
 
 
 int yylex(void);

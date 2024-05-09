@@ -1,4 +1,4 @@
-#include "traducteur.h"
+#include "../include/traducteur.h"
 #include <string.h>
 
 static const char * const txt_getchar = 

@@ -16,6 +16,7 @@ LEX=$(EXEC)
 BINDIR=bin
 OBJDIR=obj
 SRCDIR=src
+INCDIR=include
 
 $(BINDIR)/$(EXEC): $(OBJDIR)/$(PARS).o $(OBJDIR)/$(LEX).yy.o $(OBJDIR)/tree.o $(OBJDIR)/Symbols_Table.o $(OBJDIR)/traducteur.o $(OBJDIR)/exit_functions.o
 	$(CC) -o $@ $^ $(LDFLAGS)
@@ -23,16 +24,16 @@ $(BINDIR)/$(EXEC): $(OBJDIR)/$(PARS).o $(OBJDIR)/$(LEX).yy.o $(OBJDIR)/tree.o $(
 $(BINDIR)/compil: $(OBJDIR)/compil.o
 	$(CC) -o $@ $< -nostartfiles -no-pie
 
-$(OBJDIR)/$(PARS).o: $(OBJDIR)/$(PARS).c $(SRCDIR)/*.h
+$(OBJDIR)/$(PARS).o: $(OBJDIR)/$(PARS).c $(INCDIR)/*.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
-$(OBJDIR)/$(LEX).yy.o: $(OBJDIR)/$(LEX).yy.c $(OBJDIR)/$(PARS).h $(SRCDIR)/*.h
+$(OBJDIR)/$(LEX).yy.o: $(OBJDIR)/$(LEX).yy.c $(OBJDIR)/$(INCDIR).h $(INCDIR)/*.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.c $(SRCDIR)/%.h
+$(OBJDIR)/%.o: $(SRCDIR)/%.c $(INCDIR)/%.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
-$(OBJDIR)/$(PARS).c $(OBJDIR)/$(PARS).h: $(SRCDIR)/$(PARS).y
+$(OBJDIR)/$(PARS).c $(OBJDIR)/$(INCDIR).h: $(SRCDIR)/$(PARS).y
 	bison $(BISONFLAGS) -o $(OBJDIR)/$(PARS).c $(SRCDIR)/$(PARS).y
 
 $(OBJDIR)/$(LEX).yy.c: $(SRCDIR)/$(LEX).lex

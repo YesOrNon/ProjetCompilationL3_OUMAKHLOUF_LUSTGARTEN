@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "tree.h"
+#include "../include/tree.h"
 extern int lineno;       /* from lexer */
 
 static const char *StringFromLabel[] = {

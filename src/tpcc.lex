@@ -1,6 +1,6 @@
 %{
 /* Identification par analyse lexicale des lexèmes */
-#include "../src/tree.h"
+#include "../include/tree.h"
 #include "tpcc.h"
 int lineno = 1;
 int c = 0;

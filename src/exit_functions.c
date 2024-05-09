@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include "../src/Symbols_Table.h"
-#include "../src/tree.h"
+#include "../include/Symbols_Table.h"
+#include "../include/tree.h"
 
 
 void closeFile(int status, void *file) {

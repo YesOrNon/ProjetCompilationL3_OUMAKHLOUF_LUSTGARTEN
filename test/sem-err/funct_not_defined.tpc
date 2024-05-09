@@ -1,0 +1,6 @@
+int main(void) {
+    int truc;
+
+    truc(12, 410); // defined as an INT but is considered a function since there are arguments
+    return 1;
+}
