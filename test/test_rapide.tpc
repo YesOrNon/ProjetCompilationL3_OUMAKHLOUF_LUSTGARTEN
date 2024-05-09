@@ -13,17 +13,8 @@ int main(void) {
     int x;
     int y;
     int truc;
-    a = 10 + 12;
-    truc(12, 43);
-    if (a < 12) return 20;
-    if (a != 20 && a != 13) return 12;
-    if (a || b) return 140;
-
-
-    y = 3;
-
-    if (y != 2) x = 2;
-    if (x == 2) return;
+    if (x == y) return 1;
+    if (!x) return 2 ;
 
     return 1;
 }

@@ -129,6 +129,9 @@ int function_parameters(Function_Table * table, int count);
 */
 Function_Table * get_function(Program_Table* program, char *ident);
 
+/* Return the last function of the list of function table */
+Function_Table * get_last_function(Function_Table * func);
+
 /* Return the size (in bytes) based on the type */
 int determine_size(Type type);
 
