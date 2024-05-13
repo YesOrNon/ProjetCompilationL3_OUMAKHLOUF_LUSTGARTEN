@@ -81,7 +81,7 @@ void free_Program_table(Program_Table* prog_table);
 /* Return the type of the node
  * Return DEFAULT if the node is not a type
 */
-Type get_return_type(Node *node, Function_Table * table, Program_Table * program);
+Type get_return_type(Node *node, Function_Table * table, Program_Table * program, Type wanted, Type last);
 
 /* Return the type of the ident if it corresponds to a symbol in sym_table
  * DEFAULT otherwise

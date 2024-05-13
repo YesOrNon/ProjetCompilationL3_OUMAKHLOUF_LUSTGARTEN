@@ -74,17 +74,22 @@ void free_Program_table(Program_Table* prog_table) {
 
 // USEFULL FUNCTIONS //
 
-Type get_return_type(Node *node, Function_Table * table, Program_Table * program) {
+Type get_return_type(Node *node, Function_Table * table, Program_Table * program, Type wanted, Type last) {
     if (node->label == _return) {
         if (FIRSTCHILD(node))
-            return expr_type(program, table, FIRSTCHILD(node), 0);
-        return DEFAULT;
+            last = expr_type(program, table, FIRSTCHILD(node), 0);
+        else
+            last = DEFAULT;
     }
     for (Node *child = FIRSTCHILD(node); child != NULL && table->type_ret != VOID_; child = child->nextSibling) {
-        Type type = get_return_type(child, table, program);
-        if (type != DEFAULT) return type;
+        if (last != DEFAULT) {
+            if ((wanted == INT || wanted == CHAR) && (last != INT && last != CHAR)) {
+                return DEFAULT;
+            }
+        }
+        last = get_return_type(child, table, program, wanted, last);
     }
-    return DEFAULT;
+    return last;
 }
 
 Type find_Symbol_type(Symbols_Table * sym_table, char * ident) {
@@ -392,7 +397,7 @@ int add_Function(Node *node, Function_Table * table, Program_Table * program){
     if (add_Symbols_to_Table(FIRSTCHILD(body), table->body)) return 1;
     if (check_name_conflict(table->body, table->header)) {fprintf(stderr, "of the function : %s\n", ident->data.ident); return 1;}
     printf("\nFunction : %s\n", ident->data.ident);
-    Type ret = get_return_type(body, table, program);
+    Type ret = get_return_type(body, table, program, table->type_ret, DEFAULT);
     printf("\n\tReturn type : %s\n", type_to_string(ret));
     if ((strcmp(ident->data.ident, "main") == 0) && (table->type_ret != INT || (ret != INT && ret != CHAR))) {
         fprintf(stderr, "Semantic Error : \"main\" function must have the type \"int\" and return an \"int\"\n");
