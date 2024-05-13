@@ -321,6 +321,7 @@ void afficherHelp(){
 
 int main(int argc, char* argv[]){
     int parse_error, tree_error;
+    int print = 0;
 
     FILE * file = fopen("obj/_anonymous.asm", "w+");
     if (!file) {
@@ -336,6 +337,9 @@ int main(int argc, char* argv[]){
     for (int i = 1; i < argc; i++){
         if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--tree") == 0){
             treeOption = 1;
+        }
+        else if (strcmp(argv[i], "-s") == 0) {
+            print = 1;
         }
         else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0){
             afficherHelp();
@@ -367,8 +371,11 @@ int main(int argc, char* argv[]){
         deleteTree(arbre);
         return 2;
     }
+    if (print) {
+        print_program_table(S);
+    }
     cToAsm(arbre, file, S);
-    print_program_table(S); // option -s à faire
+    // print_program_table(S); // option -s à faire
     deleteTree(arbre);
     printf("normal return, tree_error : %d, parse_error : %d\n", tree_error, parse_error);
     return tree_error;

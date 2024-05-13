@@ -76,7 +76,9 @@ void free_Program_table(Program_Table* prog_table) {
 
 Type get_return_type(Node *node, Function_Table * table, Program_Table * program) {
     if (node->label == _return) {
-        return expr_type(program, table, FIRSTCHILD(node), 0);
+        if (FIRSTCHILD(node))
+            return expr_type(program, table, FIRSTCHILD(node), 0);
+        return DEFAULT;
     }
     for (Node *child = FIRSTCHILD(node); child != NULL && table->type_ret != VOID_; child = child->nextSibling) {
         Type type = get_return_type(child, table, program);
@@ -378,6 +380,7 @@ int add_Symbols_to_Table(Node *node, Symbols_Table * table){
 }
 
 int add_Function(Node *node, Function_Table * table, Program_Table * program){
+    int error = 0;
     Node * header = FIRSTCHILD(node);
     Node * type = FIRSTCHILD(header);
     Node * ident = SECONDCHILD(header);
@@ -391,14 +394,17 @@ int add_Function(Node *node, Function_Table * table, Program_Table * program){
     printf("\nFunction : %s\n", ident->data.ident);
     Type ret = get_return_type(body, table, program);
     printf("\n\tReturn type : %s\n", type_to_string(ret));
-    if ((strcmp(ident->data.ident, "main") == 0) && table->type_ret != INT && ret != INT) {
-        fprintf(stderr, "Semantic Error : \"main\" function must have the type \"iny\" and return an \"int\"\n");
+    if ((strcmp(ident->data.ident, "main") == 0) && (table->type_ret != INT || (ret != INT && ret != CHAR))) {
+        fprintf(stderr, "Semantic Error : \"main\" function must have the type \"int\" and return an \"int\"\n");
         fprintf(stderr, "Actual : %s\n", type_to_string(table->type_ret));
-        return 1;
+        fprintf(stderr, "Type of the value returned : %s\n", type_to_string(ret));
+        error++;
     }
-    else if (ret == INT && table->type_ret == CHAR)
+    if (ret == INT && table->type_ret == CHAR)
         fprintf(stderr, "Warning : Function \"%s\" has the type \"char\" and returns an \"int\"\n", ident->data.ident);
-    return 0;
+    if (ret == CHAR && table->type_ret == INT)
+        fprintf(stderr, "Warning : Function \"%s\" has the type \"int\" and returns a \"char\"\n", ident->data.ident);
+    return error;
 }
 
 int treeToSymbol(Node *node, Program_Table * table) {

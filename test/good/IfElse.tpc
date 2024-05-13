@@ -6,9 +6,9 @@ int main(void) {
     i = 12;
     j = 5;
     if (i == 7) {
-        return;
+        return 10;
     } else {
-        return;
+        return 14;
     }
 
 }

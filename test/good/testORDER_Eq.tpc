@@ -3,7 +3,7 @@ int main(void) {
     z = 3;
 
     if (z <= 8) w = 1000;
-    if (w >= 7) return;
+    if (w >= 7) return 1;
 }
 
 

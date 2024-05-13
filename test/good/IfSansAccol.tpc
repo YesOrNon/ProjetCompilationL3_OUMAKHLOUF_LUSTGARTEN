@@ -2,4 +2,5 @@ int main(void) {
     int i;
     i = 5;
     if (i == 5) i = 10;
+    return 12;
 }

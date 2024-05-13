@@ -3,5 +3,6 @@ int main(void) {
 
     w = 2 * 2;
     w = 2 * 2 * 4;
+    return 1;
 }
 

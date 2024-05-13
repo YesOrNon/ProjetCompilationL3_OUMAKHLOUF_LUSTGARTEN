@@ -3,5 +3,5 @@ int main(void) {
     x = 2;
     y = 3;
     z = 7;
-    if (y != 2 || x == 2 || z == 7) {return;}
+    if (y != 2 || x == 2 || z == 7) {return 1;}
 }

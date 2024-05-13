@@ -3,4 +3,5 @@ int main(void) {
     int w;
     x = 2;
     w = x % 1;
+    return 1;
 }
