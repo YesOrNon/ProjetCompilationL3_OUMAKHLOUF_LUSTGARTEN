@@ -95,6 +95,7 @@ static const char * const txt_putint =
 
 int main_flag = 0;
 int indice_condition = 0;
+int ifToElse = 0;
 int indice_comp = 0;
 
 int write_start(FILE * anonymous, Symbols_Table* globals) {
@@ -161,23 +162,67 @@ int write_eq_order(FILE * anonymous, Node *node, Program_Table* program){
     indice_comp++;
     fprintf(anonymous,  "\tpop r9 ; start eq/order\n"
                         "\tpop r8\n"
-                        "\tcmp r9, r8\n");
-    if (!strcmp(node->data.comp, "==")) {fprintf(anonymous,  "\tje");}
-    if (!strcmp(node->data.comp, "!=")) {fprintf(anonymous,  "\tjne");}
-    if (!strcmp(node->data.comp, "<=")) {fprintf(anonymous,  "\tjle");}
-    if (!strcmp(node->data.comp, ">=")) {fprintf(anonymous,  "\tjge");}
-    if (!strcmp(node->data.comp, "<")) {fprintf(anonymous,  "\tjl");}
-    if (!strcmp(node->data.comp, ">")) {fprintf(anonymous,  "\tjg");}
+                        "\tcmp r9, r8\n\t");
+    if (!strcmp(node->data.comp, "==")) {fprintf(anonymous,  "je");}
+    if (!strcmp(node->data.comp, "!=")) {fprintf(anonymous,  "jne");}
+    if (!strcmp(node->data.comp, "<=")) {fprintf(anonymous,  "jle");}
+    if (!strcmp(node->data.comp, ">=")) {fprintf(anonymous,  "jge");}
+    if (!strcmp(node->data.comp, "<")) {fprintf(anonymous,  "jl");}
+    if (!strcmp(node->data.comp, ">")) {fprintf(anonymous,  "jg");}
     fprintf(anonymous,  " .true%d\n"
                         "\tpush 0\n"
                         "\tjmp .fincomp%d\n"
                         ".true%d\n"
                         "\tpush 1\n"
                         ".fincomp%d ; end eq/order\n",
-                        indice_comp,
-                        indice_comp,
-                        indice_comp,
-                        indice_comp);
+                        indice_comp, indice_comp,
+                        indice_comp, indice_comp);
+    return 1;
+}
+
+int write_negation(FILE * anonymous, Node *node, Program_Table* program){
+    eval_expr(anonymous, FIRSTCHILD(node), program);
+    indice_comp++;
+    fprintf(anonymous,  "\tpop r9 ; start negation\n"
+                        "\tcmp r9, 0\n"
+                        "\tje .toOne%d\n"
+                        "\tpush 0\n"
+                        "\tjmp .fincomp%d\n"
+                        ".toOne%d\n"
+                        "\tpush 1\n"
+                        ".fincomp%d ; end negation\n",
+                        indice_comp, indice_comp,
+                        indice_comp, indice_comp);
+    return 1;
+}
+
+int write_and_or(FILE * anonymous, Node *node, Program_Table* program){
+    int isAnd = 0;
+    if (node->label == and)
+        isAnd = 1;
+    eval_expr(anonymous, FIRSTCHILD(node), program);
+    indice_comp++;
+    int lazy = indice_comp;
+    fprintf(anonymous,  "\tpop r9 ; start and\n"
+                        "\tcmp r9, 0\n\t");
+    if (isAnd)  {fprintf(anonymous,  "je");}
+    else /*or*/ {fprintf(anonymous,  "jne");}
+    fprintf(anonymous,  " .lazy%d\n",
+                        lazy);
+    eval_expr(anonymous, SECONDCHILD(node), program);
+    fprintf(anonymous,  "\tpop r9 ; 2nd child and\n"
+                        "\tcmp r9, 0\n\t");
+    if (isAnd)  {fprintf(anonymous,  "je");}
+    else /*or*/ {fprintf(anonymous,  "jne");}
+    fprintf(anonymous,  " .lazy%d\n"
+                        "\tpush %d\n"
+                        "\tjmp .afterLazy%d\n"
+                        ".lazy%d\n"
+                        "\tpush %d\n"
+                        ".afterLazy%d ; end and\n",
+                        lazy, isAnd, lazy,
+                        lazy, !isAnd, lazy);
+    
     return 1;
 }
 
@@ -201,6 +246,13 @@ int eval_expr(FILE * anonymous, Node * node, Program_Table* program) {
         case eq:
         case order:
             write_eq_order(anonymous, node, program);
+            break;
+        case exclamation:
+            write_negation(anonymous, node, program);
+            break;
+        case and:
+        case or:
+            write_and_or(anonymous, node, program);
             break;
         case ident: { // Les accolades servent à pouvoir faire une déclaration dans un case (impossible sinon)
             Symbol * tmp = find_Symbol(program->globals, node->data.ident);
@@ -266,19 +318,20 @@ int write_global_value(FILE * anonymous, Symbol * tmp, int indice){
 int write_if(FILE * anonymous, Node *node, Program_Table* program, int _else){
     eval_expr(anonymous, FIRSTCHILD(node), program);
     indice_condition++;
+    int end_condition = indice_condition;
     fprintf(anonymous,  "\tpop r8 ; start if\n"
                         "\tcmp r8, 0\n"
                         "\tje .jump_to_endif%d\n",
-                        indice_condition);
+                        end_condition);
     cToAsm(SECONDCHILD(node), anonymous,  program);
-    if (_else) {fprintf(anonymous, "\tjmp .jump_to_endelse%d\n", indice_condition);}
-    fprintf(anonymous, ".jump_to_endif%d ; end if\n", indice_condition);
-    return 1;
+    if (_else) {fprintf(anonymous, "\tjmp .jump_to_endelse%d\n", end_condition);}
+    fprintf(anonymous, ".jump_to_endif%d ; end if\n", end_condition);
+    return end_condition;
 }
 
-int write_else(FILE * anonymous, Node *node, Program_Table* program){
+int write_else(FILE * anonymous, Node *node, Program_Table* program, int end_condition){
     cToAsm(FIRSTCHILD(node), anonymous,  program);
-    fprintf(anonymous, ".jump_to_endelse%d ; end else\n", indice_condition);
+    fprintf(anonymous, ".jump_to_endelse%d ; end else\n", end_condition);
     return 1;
 }
 
@@ -329,11 +382,11 @@ void cToAsm(Node *node, FILE * file, Program_Table* program) {
                 write_if(file, node, program, 0);
             }
             else{
-                write_if(file, node, program, 1);
+                ifToElse = write_if(file, node, program, 1);
             }
             return;
         case _else:
-            write_else(file, node, program);
+            write_else(file, node, program, ifToElse);
             return;
         default:
             break;
