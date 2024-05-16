@@ -9,15 +9,11 @@ int write_start(FILE * anonymous, Symbols_Table * globals);
 
 int write_end(FILE * anonymous);
 
-int write_add(FILE * anonymous, Node *node, Program_Table* program);
-
-int write_sub(FILE * anonymous, Node *node, Program_Table* program);
+int write_add_sub(FILE * anonymous, Node *node, Program_Table* program);
 
 int write_mul(FILE * anonymous, Node *node, Program_Table* program);
 
-int write_div(FILE * anonymous, Node *node, Program_Table* program);
-
-int write_mod(FILE * anonymous, Node *node, Program_Table* program);
+int write_div_mod(FILE * anonymous, Node *node, Program_Table* program);
 
 int write_number(FILE * anonymous, int val);
 

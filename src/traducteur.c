@@ -94,7 +94,6 @@ static const char * const txt_putint =
     "    ret\n";
 
 int main_flag = 0;
-int indice_condition = 0;
 int ifToElse = 0;
 int indice_comp = 0;
 
@@ -122,34 +121,35 @@ int write_end(FILE * anonymous) {
     return fprintf(anonymous, ".return\n\tmov rax, 60\n\tmov rdi, 0\n\tsyscall\n");
 }
 
-int write_add(FILE * anonymous, Node * node, Program_Table* program) {
+int write_add_sub(FILE * anonymous, Node * node, Program_Table* program) {
     eval_expr(anonymous, FIRSTCHILD(node), program);
     eval_expr(anonymous, SECONDCHILD(node), program);
-    return fprintf(anonymous, "\tpop r8\n\tpop r9\n\tadd r8, r9\n\tpush r8\n");
-}
-
-int write_sub(FILE * anonymous, Node * node, Program_Table* program) {
-    eval_expr(anonymous, FIRSTCHILD(node), program);
-    eval_expr(anonymous, SECONDCHILD(node), program);
-    return fprintf(anonymous, "\tpop r9\n\tpop r8\n\tsub r8, r9\n\tpush r8\n");
+    fprintf(anonymous, "\tpop r8     ; start ADDSUB\n\tpop r9     ;\n\t");
+    switch (node->data.byte){
+        case '+': fprintf(anonymous, "add"); break;
+        case '-': fprintf(anonymous, "sub"); break;
+        default: return 0; break;
+    }
+    fprintf(anonymous, " r8, r9 ;\n\tpush r8    ; end ADDSUB\n");
+    return 1;
 }
 
 int write_mul(FILE * anonymous, Node * node, Program_Table* program) {
     eval_expr(anonymous, FIRSTCHILD(node), program);
     eval_expr(anonymous, SECONDCHILD(node), program);
-    return fprintf(anonymous, "\tpop r8\n\tpop r9\n\timul r8, r9\n\tpush r8\n");
+    return fprintf(anonymous, "\tpop r8      ; start MUL\n\tpop r9      ;\n\timul r8, r9 ;\n\tpush r8     ; end MUL\n");
 }
 
-int write_div(FILE * anonymous, Node * node, Program_Table* program) {
+int write_div_mod(FILE * anonymous, Node * node, Program_Table* program) {
     eval_expr(anonymous, FIRSTCHILD(node), program);
     eval_expr(anonymous, SECONDCHILD(node), program);
-    return fprintf(anonymous, "\tpop r8\n\tmov rdx, 0\n\tpop rax\n\tidiv r8\n\tpush rax\n");
-}
-
-int write_mod(FILE * anonymous, Node * node, Program_Table* program) {
-    eval_expr(anonymous, FIRSTCHILD(node), program);
-    eval_expr(anonymous, SECONDCHILD(node), program);
-    return fprintf(anonymous, "\tpop r8\n\tmov rdx, 0\n\tpop rax\n\tidiv r8\n\tpush rdx\n");
+    fprintf(anonymous, "\tpop r8     ; start DIV/MOD\n\tmov rdx, 0 ;\n\tpop rax    ;\n\tidiv r8    ;\n\tpush ");
+    switch (node->data.byte){
+        case '/': fprintf(anonymous, "rax   ; end DIV/MOD\n"); break;
+        case '%': fprintf(anonymous, "rdx   ; end DIV/MOD\n"); break;
+        default: return 0; break;
+    }
+    return 1;
 }
 
 int write_number(FILE * anonymous, int val) {
@@ -160,21 +160,21 @@ int write_eq_order(FILE * anonymous, Node *node, Program_Table* program){
     eval_expr(anonymous, FIRSTCHILD(node), program);
     eval_expr(anonymous, SECONDCHILD(node), program);
     indice_comp++;
-    fprintf(anonymous,  "\tpop r9 ; start eq/order\n"
-                        "\tpop r8\n"
-                        "\tcmp r9, r8\n\t");
+    fprintf(anonymous,  "\tpop r9        ;\n"
+                        "\tpop r8        ;\n"
+                        "\tcmp r9, r8    ;\n\t");
     if (!strcmp(node->data.comp, "==")) {fprintf(anonymous,  "je");}
     if (!strcmp(node->data.comp, "!=")) {fprintf(anonymous,  "jne");}
     if (!strcmp(node->data.comp, "<=")) {fprintf(anonymous,  "jle");}
     if (!strcmp(node->data.comp, ">=")) {fprintf(anonymous,  "jge");}
     if (!strcmp(node->data.comp, "<")) {fprintf(anonymous,  "jl");}
     if (!strcmp(node->data.comp, ">")) {fprintf(anonymous,  "jg");}
-    fprintf(anonymous,  " .true%d\n"
-                        "\tpush 0\n"
-                        "\tjmp .fincomp%d\n"
-                        ".true%d\n"
-                        "\tpush 1\n"
-                        ".fincomp%d ; end eq/order\n",
+    fprintf(anonymous,  " .true%d     ;\n"
+                        "\tpush 0        ; EQ/ORDER\n"
+                        "\tjmp .fincomp%d ;\n"
+                        ".true%d            ;\n"
+                        "\tpush 1        ;\n"
+                        ".fincomp%d         ;\n",
                         indice_comp, indice_comp,
                         indice_comp, indice_comp);
     return 1;
@@ -183,14 +183,14 @@ int write_eq_order(FILE * anonymous, Node *node, Program_Table* program){
 int write_negation(FILE * anonymous, Node *node, Program_Table* program){
     eval_expr(anonymous, FIRSTCHILD(node), program);
     indice_comp++;
-    fprintf(anonymous,  "\tpop r9 ; start negation\n"
-                        "\tcmp r9, 0\n"
-                        "\tje .toOne%d\n"
-                        "\tpush 0\n"
-                        "\tjmp .fincomp%d\n"
-                        ".toOne%d\n"
-                        "\tpush 1\n"
-                        ".fincomp%d ; end negation\n",
+    fprintf(anonymous,  "\tpop r9        ; start NOT !\n"
+                        "\tcmp r9, 0     ;\n"
+                        "\tje .toOne%d    ;\n"
+                        "\tpush 0        ;\n"
+                        "\tjmp .fincomp%d ;\n"
+                        ".toOne%d           ;\n"
+                        "\tpush 1        ;\n"
+                        ".fincomp%d         ; end NOT !\n",
                         indice_comp, indice_comp,
                         indice_comp, indice_comp);
     return 1;
@@ -203,23 +203,23 @@ int write_and_or(FILE * anonymous, Node *node, Program_Table* program){
     eval_expr(anonymous, FIRSTCHILD(node), program);
     indice_comp++;
     int lazy = indice_comp;
-    fprintf(anonymous,  "\tpop r9 ; start and\n"
-                        "\tcmp r9, 0\n\t");
+    fprintf(anonymous,  "\tpop r9          ; start AND/OR\n"
+                        "\tcmp r9, 0       ;\n\t");
     if (isAnd)  {fprintf(anonymous,  "je");}
     else /*or*/ {fprintf(anonymous,  "jne");}
-    fprintf(anonymous,  " .lazy%d\n",
+    fprintf(anonymous,  " .lazy%d       ;\n",
                         lazy);
     eval_expr(anonymous, SECONDCHILD(node), program);
-    fprintf(anonymous,  "\tpop r9 ; 2nd child and\n"
-                        "\tcmp r9, 0\n\t");
+    fprintf(anonymous,  "\tpop r9          ;\n"
+                        "\tcmp r9, 0       ;\n\t");
     if (isAnd)  {fprintf(anonymous,  "je");}
     else /*or*/ {fprintf(anonymous,  "jne");}
-    fprintf(anonymous,  " .lazy%d\n"
-                        "\tpush %d\n"
-                        "\tjmp .afterLazy%d\n"
-                        ".lazy%d\n"
-                        "\tpush %d\n"
-                        ".afterLazy%d ; end and\n",
+    fprintf(anonymous,  " .lazy%d       ;\n"
+                        "\tpush %d          ;\n"
+                        "\tjmp .afterLazy%d ;\n"
+                        ".lazy%d              ;\n"
+                        "\tpush %d          ;\n"
+                        ".afterLazy%d         ; end AND/OR\n",
                         lazy, isAnd, lazy,
                         lazy, !isAnd, lazy);
     
@@ -235,13 +235,11 @@ int eval_expr(FILE * anonymous, Node * node, Program_Table* program) {
             write_number(anonymous, -FIRSTCHILD(node)->data.num);
             break;
         case addsub:
-            if (node->data.byte == '+') {write_add(anonymous, node, program);}
-            else                        {write_sub(anonymous, node, program);}
+            write_add_sub(anonymous, node, program);
             break;
         case divstar:
-            if (node->data.byte == '*')         {write_mul(anonymous, node, program);}
-            else if (node->data.byte == '/')    {write_div(anonymous, node, program);}
-            else                                {write_mod(anonymous, node, program);}
+            if (node->data.byte == '*') {write_mul(anonymous, node, program);}
+            else                        {write_div_mod(anonymous, node, program);}
             break;
         case eq:
         case order:
@@ -275,11 +273,9 @@ int eval_expr(FILE * anonymous, Node * node, Program_Table* program) {
 }
 
 int write_aff_global(FILE * anonymous, Symbol * tmp, int indice){
-    if (indice)
-        fprintf(anonymous, "\tpop r8 ; start aff global\n");
-    else
-        fprintf(anonymous, "\tmov r8, 0 ; start aff global\n");
-    fprintf(anonymous, "\tpop r9\n");
+    if (indice) {fprintf(anonymous, "\tpop r8                         ; start aff global\n");}
+    else {fprintf(anonymous, "\tmov r8, 0                         ; start aff global\n");}
+    fprintf(anonymous, "\tpop r9                            ;\n");
     switch (tmp->type) {
         case CHAR:
             fprintf(anonymous, "\tmov byte[VarGlobals+%ld+r8], r9b ; end aff global\n", tmp->deplct - tmp->size);
@@ -287,51 +283,47 @@ int write_aff_global(FILE * anonymous, Symbol * tmp, int indice){
         case INT:
             fprintf(anonymous, "\tmov dword[VarGlobals+%ld+r8*4], r9d ; end aff global\n", tmp->deplct - tmp->size);
             break;    
-        default:
-            return 0;
-            break;
+        default: return 0; break;
     }
     return 1;
 }
 
 int write_global_value(FILE * anonymous, Symbol * tmp, int indice){
     if (indice)
-        fprintf(anonymous, "\tpop r8 ; start eval global\n");
+        fprintf(anonymous, "\tpop r8                            ; start eval global\n");
     else
-        fprintf(anonymous, "\tmov r8, 0 ; start eval global\n");
-    fprintf(anonymous, "\tmov r9, 0\n");
+        fprintf(anonymous, "\tmov r8, 0                         ; start eval global\n");
+    fprintf(anonymous, "\tmov r9, 0                         ;\n");
     switch (tmp->type) {
         case CHAR:
-            fprintf(anonymous, "\tmov r9b, byte[VarGlobals+%ld+r8]\n", tmp->deplct - tmp->size);
+            fprintf(anonymous, "\tmov r9b, byte[VarGlobals+%ld+r8] ;\n", tmp->deplct - tmp->size);
             break;
         case INT:
-            fprintf(anonymous, "\tmov r9d, dword[VarGlobals+%ld+r8*4]\n", tmp->deplct - tmp->size);
+            fprintf(anonymous, "\tmov r9d, dword[VarGlobals+%ld+r8*4] ;\n", tmp->deplct - tmp->size);
             break;
-        default:
-            return 0;
-            break;
+        default: return 0; break;
     }
-    fprintf(anonymous, "\tpush r9 ; end eval global\n");
+    fprintf(anonymous, "\tpush r9                           ; end eval global\n");
     return 1;
 }
 
 int write_if(FILE * anonymous, Node *node, Program_Table* program, int _else){
     eval_expr(anonymous, FIRSTCHILD(node), program);
-    indice_condition++;
-    int end_condition = indice_condition;
-    fprintf(anonymous,  "\tpop r8 ; start if\n"
-                        "\tcmp r8, 0\n"
-                        "\tje .jump_to_endif%d\n",
+    indice_comp++;
+    int end_condition = indice_comp;
+    fprintf(anonymous,  "\tpop r8              ; ##### start IF #####\n"
+                        "\tcmp r8, 0           ;\n"
+                        "\tje .jump_to_endif%d  ;\n",
                         end_condition);
     cToAsm(SECONDCHILD(node), anonymous,  program);
     if (_else) {fprintf(anonymous, "\tjmp .jump_to_endelse%d\n", end_condition);}
-    fprintf(anonymous, ".jump_to_endif%d ; end if\n", end_condition);
+    fprintf(anonymous, ".jump_to_endif%d         ; ##### end IF #####\n", end_condition);
     return end_condition;
 }
 
 int write_else(FILE * anonymous, Node *node, Program_Table* program, int end_condition){
     cToAsm(FIRSTCHILD(node), anonymous,  program);
-    fprintf(anonymous, ".jump_to_endelse%d ; end else\n", end_condition);
+    fprintf(anonymous, ".jump_to_endelse%d       ; ##### end ELSE #####\n", end_condition);
     return 1;
 }
 
