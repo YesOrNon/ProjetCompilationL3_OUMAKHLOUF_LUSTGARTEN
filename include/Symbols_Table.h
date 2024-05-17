@@ -141,6 +141,9 @@ char* type_to_string(Type type);
 /* Return the last adress of the symbol table */
 int get_last_adress(Symbols_Table* sym_table);
 
+/* Return the value used as an index of an array */
+int indice_tab(Node * node);
+
 /* case ident from the function expr_type 
  * Return the type of the node which has the label `ident`
 */
