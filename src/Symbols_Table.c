@@ -226,6 +226,29 @@ int get_last_adress(Symbols_Table* sym_table) {
     return sym_table->tab[sym_table->index - 1].deplct;
 }
 
+int indice_tab(Node * node) {
+    
+    switch (node->label) {
+        case num:
+            return node->data.num;
+        case charac:
+            return node->data.ident[0];
+        case ident:
+            // hmmmmmmmmmmmmmmmm
+            return 1;
+        case addsubUnaire:
+            return -indice_tab(FIRSTCHILD(node));
+        case addsub:
+            return indice_tab(FIRSTCHILD(node)) + indice_tab(SECONDCHILD(node));
+        case divstar:
+            if (node->data.byte == '/') return indice_tab(FIRSTCHILD(node)) / indice_tab(SECONDCHILD(node));
+            else return indice_tab(FIRSTCHILD(node)) * indice_tab(SECONDCHILD(node));
+        default:
+            return -1;
+    }
+    
+}
+
 Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue) {
     Type left, right;
     if (Lvalue) {   // Lvalue
@@ -273,7 +296,9 @@ Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node
 // CORE FUNCTIONS //
 
 Type expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue) {
-    Type left, right;    
+    Type left, right;
+    Symbol * symbol;    
+    int indice;
     switch (node->label) {
 
     case ident:
@@ -307,15 +332,33 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
         return CHAR;
 
     case ident_tab:
+        symbol = find_Symbol(table->body, node->data.ident);
+        if (symbol == NULL) symbol = find_Symbol(table->header, node->data.ident);
+        if (symbol == NULL) symbol = find_Symbol(program->globals, node->data.ident);
+        if (symbol == NULL) {
+            fprintf(stderr, "Semantic Error : Identifier \"%s\" is not defined\n", node->data.ident);
+            return DEFAULT;
+        }
+        indice = indice_tab(FIRSTCHILD(node));
         if (Lvalue) {
             printf("%s[ ", node->data.ident);
             expr_type(program, table, FIRSTCHILD(node), 0);
             printf("] = ");
+            if ((indice > symbol->size / 4) || indice < 0) {
+                fprintf(stderr, "Semantic Error : Index out of bounds\n");
+                fprintf(stderr, "Index : %d, Size : %d\n", indice, symbol->size / 4);
+                return DEFAULT;
+            }
             return expr_type(program, table, node->nextSibling, 0);
         }
         printf("%s[ ", node->data.ident);
         expr_type(program, table, FIRSTCHILD(node), 0);
         printf("]");
+        if ((indice > symbol->size / 4) || indice < 0) {
+            fprintf(stderr, "Semantic Error : Index out of bounds\n");
+            fprintf(stderr, "Index : %d, Size : %d\n", indice, symbol->size / 4);
+            return DEFAULT;
+        }
         return INT;
 
     case or:
