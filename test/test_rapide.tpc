@@ -1,11 +1,19 @@
-int main(int oui[]) {
 
-    int x[5];
+int test(int tab[]) {
+    return 1;
+}
+
+void blabla(void) {
+    return;
+}
+
+int main(void) {
+    int x[10];
     int y;
 
-    y = 7;
-    x[5] = x[6];    
-    /* x[y] = 1; */
+    test(y);
+
+    y = blabla();
 
     return 0;
 }

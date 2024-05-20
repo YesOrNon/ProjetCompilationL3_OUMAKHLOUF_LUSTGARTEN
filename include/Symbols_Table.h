@@ -111,11 +111,13 @@ int isPresent_all(Program_Table * table, Node * node);
 */
 int check_name_conflict(Symbols_Table *local_vars_table, Symbols_Table *param_table);
 
-/* Count the number of args used checks the types of the arguments
+/* Count the number of args used
+ * Check the types of the arguments
+ * `used_from` is the function from which the function is called
  * If the types are correct, return the number of args used
  * Else return -1
 */
-int count_args(Node * node, Program_Table * program, Function_Table * table);
+int count_args(Node * node, Program_Table * program, Function_Table * function, Function_Table * used_from);
 
 /* Compare the number of args used (`count`) 
  * with the number of args that the function takes (`signature`)
@@ -140,9 +142,6 @@ char* type_to_string(Type type);
 
 /* Return the last adress of the symbol table */
 int get_last_adress(Symbols_Table* sym_table);
-
-/* Return the value used as an index of an array */
-int indice_tab(Node * node);
 
 /* case ident from the function expr_type 
  * Return the type of the node which has the label `ident`

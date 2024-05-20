@@ -155,14 +155,14 @@ Function_Table * get_function(Program_Table* program, char *ident) {
     return NULL;
 }
 
-int count_args(Node * node, Program_Table * program, Function_Table * table) {
+int count_args(Node * node, Program_Table * program, Function_Table * function, Function_Table * used_from) {
     int i = 0; Type type;
     Node * child = FIRSTCHILD(node);
     while (child != NULL)   {
-        type = expr_type(program, table, child, 0);
-        if (type != table->header->tab[i].type) {
-            fprintf(stderr, "Semantic Error : Type of argument \"%s\" in function \"%s\"\n", child->data.ident, table->ident);
-            fprintf(stderr, "Expected : %s, Actual : %s\n", type_to_string(table->header->tab[i].type), type_to_string(type));
+        type = expr_type(program, used_from, child, 0);
+        if (type != function->header->tab[i].type) {
+            fprintf(stderr, "Semantic Error : Type of the argument \"%s\" in function \"%s\"\n", child->data.ident, function->ident);
+            fprintf(stderr, "Expected : %s, Actual : %s\n", type_to_string(function->header->tab[i].type), type_to_string(type));
             return -1;
         }
         child = child->nextSibling;
@@ -226,31 +226,9 @@ int get_last_adress(Symbols_Table* sym_table) {
     return sym_table->tab[sym_table->index - 1].deplct;
 }
 
-int indice_tab(Node * node) {
-    
-    switch (node->label) {
-        case num:
-            return node->data.num;
-        case charac:
-            return node->data.ident[0];
-        case ident:
-            // hmmmmmmmmmmmmmmmm
-            return 1;
-        case addsubUnaire:
-            return -indice_tab(FIRSTCHILD(node));
-        case addsub:
-            return indice_tab(FIRSTCHILD(node)) + indice_tab(SECONDCHILD(node));
-        case divstar:
-            if (node->data.byte == '/') return indice_tab(FIRSTCHILD(node)) / indice_tab(SECONDCHILD(node));
-            else return indice_tab(FIRSTCHILD(node)) * indice_tab(SECONDCHILD(node));
-        default:
-            return -1;
-    }
-    
-}
-
 Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue) {
     Type left, right;
+    Function_Table * tmp;
     if (Lvalue) {   // Lvalue
         printf("%s = ", node->data.ident);
         left = find_Symbol_type(table->body, node->data.ident);
@@ -273,15 +251,17 @@ Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node
     else if (strcmp(node->data.ident, "putint") == 0) return VOID_;
     else if (strcmp(node->data.ident, "putchar") == 0) return VOID_;
     else if ((FIRSTCHILD(node) && FIRSTCHILD(node)->label == args) || (node->nextSibling && node->nextSibling->label == args)){  // Function call
+        printf("( ");
         Symbol * symbol = find_Symbol(program->globals, node->data.ident);
         if (symbol == NULL || symbol->type != FUNCTION) {
             fprintf(stderr, "Semantic Error : Function \"%s\" is not defined\n", node->data.ident);
             return DEFAULT;
         }
-        table = get_function(program, node->data.ident);
-        right = table->type_ret;
-        if (FIRSTCHILD(node) && !function_parameters(table, count_args(node->firstChild, program, table))) right = DEFAULT;
-        else if (node->nextSibling && !function_parameters(table, count_args(node->nextSibling, program, table))) right = DEFAULT;
+        tmp = get_function(program, node->data.ident);
+        right = tmp->type_ret;
+        if (FIRSTCHILD(node) && !function_parameters(tmp, count_args(node->firstChild, program, tmp, table))) right = DEFAULT;
+        else if (node->nextSibling && !function_parameters(tmp, count_args(node->nextSibling, program, tmp, table))) right = DEFAULT;
+        printf(") ");
         return right;
     }
     else {
@@ -298,7 +278,6 @@ Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node
 Type expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue) {
     Type left, right;
     Symbol * symbol;    
-    int indice;
     switch (node->label) {
 
     case ident:
@@ -339,26 +318,15 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
             fprintf(stderr, "Semantic Error : Identifier \"%s\" is not defined\n", node->data.ident);
             return DEFAULT;
         }
-        indice = indice_tab(FIRSTCHILD(node));
         if (Lvalue) {
             printf("%s[ ", node->data.ident);
             expr_type(program, table, FIRSTCHILD(node), 0);
             printf("] = ");
-            if ((indice > symbol->size / 4) || indice < 0) {
-                fprintf(stderr, "Semantic Error : Index out of bounds\n");
-                fprintf(stderr, "Index : %d, Size : %d\n", indice, symbol->size / 4);
-                return DEFAULT;
-            }
             return expr_type(program, table, node->nextSibling, 0);
         }
         printf("%s[ ", node->data.ident);
         expr_type(program, table, FIRSTCHILD(node), 0);
         printf("]");
-        if ((indice > symbol->size / 4) || indice < 0) {
-            fprintf(stderr, "Semantic Error : Index out of bounds\n");
-            fprintf(stderr, "Index : %d, Size : %d\n", indice, symbol->size / 4);
-            return DEFAULT;
-        }
         return INT;
 
     case or:
@@ -404,11 +372,15 @@ int add_symbol(Symbols_Table* sym_table, Symbol symbol) {
 int add_Symbols_to_Table(Node *node, Symbols_Table * table){
     if (node->label == type) {
         if (FIRSTCHILD(node)->label == ident_tab) {
-            if (FIRSTCHILD(FIRSTCHILD(node))) {
-                Symbol tab = make_symbol(FIRSTCHILD(node)->data.ident, INT);
+            Symbol tab = make_symbol(FIRSTCHILD(node)->data.ident, INT);
+            if (FIRSTCHILD(FIRSTCHILD(node))) { // Array with index
                 tab.size *= FIRSTCHILD(FIRSTCHILD(node))->data.num;
-                if (add_symbol(table, tab)) return 1;
+                if (tab.size == 0) {
+                    fprintf(stderr, "Semantic Error : Array size must be greater than 0\n");
+                    return 1;
+                }
             }
+            if (add_symbol(table, tab)) return 1;
         }
         else {
             if (add_symbol(table, make_symbol(FIRSTCHILD(node)->data.ident, string_to_type(node->data.comp))))  return 1;
