@@ -79,7 +79,7 @@ void free_Program_table(Program_Table* prog_table) {
 Type get_return_type(Node *node, Function_Table * table, Program_Table * program, Type wanted, Type *last) {
     if (node->label == _return) {
         if (FIRSTCHILD(node))
-            *last = expr_type(program, table, FIRSTCHILD(node), 0);
+            *last = expr_type(program, table, FIRSTCHILD(node), 0, 0);
         else
             *last = VOID_;
     }
@@ -168,7 +168,7 @@ int count_args(Node * node, Program_Table * program, Function_Table * function, 
     Node * child = FIRSTCHILD(node);
     err_line = node->lineno;
     while (child != NULL)   {
-        type = expr_type(program, used_from, child, 0);
+        type = expr_type(program, used_from, child, 0, 0);
         if (type != function->header->tab[i].type) {
             fprintf(stderr, "Line %d -> Semantic Error : Type of the argument \"%s\" in function \"%s\"\n", err_line, child->data.ident, function->ident);
             fprintf(stderr, "Line %d -> Expected : %s, Actual : %s\n", err_line, type_to_string(function->header->tab[i].type), type_to_string(type));
@@ -235,7 +235,7 @@ int get_last_adress(Symbols_Table* sym_table) {
     return sym_table->tab[sym_table->index - 1].deplct;
 }
 
-Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue) {
+Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue, int boolean) {
     Type left, right;
     Function_Table * tmp;
     if (Lvalue) {   // Lvalue
@@ -243,7 +243,7 @@ Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node
         left = find_Symbol_type(table->body, node->data.ident);
         if (left == DEFAULT) left = find_Symbol_type(table->header, node->data.ident);
         if (left == DEFAULT) left = find_Symbol_type(program->globals, node->data.ident);
-        right = expr_type(program, table, node->nextSibling, 0);
+        right = expr_type(program, table, node->nextSibling, 0, boolean);
         if (left == CHAR && right == INT) {
             fprintf(stderr, "\nLine %d -> Warning : Operation between CHAR and INT variables\n", err_line);
             return INT;
@@ -277,21 +277,30 @@ Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node
         right = find_Symbol_type(table->body, node->data.ident);
         if (right == DEFAULT) right = find_Symbol_type(table->header, node->data.ident);
         if (right == DEFAULT) right = find_Symbol_type(program->globals, node->data.ident);
-    }
+        if (boolean) {
+            Symbol * symbol = find_Symbol(program->globals, node->data.ident);
+            if (symbol == NULL) symbol = find_Symbol(table->header, node->data.ident);
+            if (symbol == NULL) symbol = find_Symbol(table->body, node->data.ident);
+            if (symbol && symbol->size > 4) {  // Array used as an ident (only works with arrays of size > 1) (blocks usage in function call, so not good)
+                fprintf(stderr, "Line %d -> Semantic Error : Identifier \"%s\" is an array\n", err_line, node->data.ident);
+                return DEFAULT;
+            }
+        }
+    }   
     return right;
 }
 
 
 // CORE FUNCTIONS //
 
-Type expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue) {
+Type expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue, int boolean) {
     Type left, right;
     Symbol * symbol;
     err_line = node->lineno;
     switch (node->label) {
 
     case ident:
-        return process_ident_expr_type(program, table, node, Lvalue);
+        return process_ident_expr_type(program, table, node, Lvalue, boolean);
 
     case num:
         printf("%d ", node->data.num);
@@ -299,20 +308,20 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
 
     case addsubUnaire:
         printf("%c ", node->data.byte);
-        return expr_type(program, table, FIRSTCHILD(node), 0);
+        return expr_type(program, table, FIRSTCHILD(node), 0, 0);
 
     case addsub:
-        left = expr_type(program, table, FIRSTCHILD(node), 0);
+        left = expr_type(program, table, FIRSTCHILD(node), 0, 0);
         printf("%c ", node->data.byte);
-        right = expr_type(program, table, SECONDCHILD(node), 0);
+        right = expr_type(program, table, SECONDCHILD(node), 0, 0);
         if ((left == CHAR && right == INT) || (left == INT && right == CHAR))
             fprintf(stderr, "\nLine -> %d Warning : Operation between CHAR and INT variables\n", err_line);
         return INT;
 
     case divstar:
-        left = expr_type(program, table, FIRSTCHILD(node), 0);
+        left = expr_type(program, table, FIRSTCHILD(node), 0, 0);
         printf("%c ", node->data.byte);
-        right = expr_type(program, table, SECONDCHILD(node), 0);
+        right = expr_type(program, table, SECONDCHILD(node), 0, 0);
         if ((left == INT) && (right == INT)) return INT;
         else return DEFAULT;
 
@@ -330,38 +339,38 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
         }
         if (Lvalue) {
             printf("%s[ ", node->data.ident);
-            expr_type(program, table, FIRSTCHILD(node), 0);
+            expr_type(program, table, FIRSTCHILD(node), 0, 0);
             printf("] = ");
-            return expr_type(program, table, node->nextSibling, 0);
+            return expr_type(program, table, node->nextSibling, 0, 0);
         }
         printf("%s[ ", node->data.ident);
-        expr_type(program, table, FIRSTCHILD(node), 0);
+        expr_type(program, table, FIRSTCHILD(node), 0, 0);
         printf("]");
         return INT;
 
     case or:
-        left = expr_type(program, table, FIRSTCHILD(node), 0);
+        left = expr_type(program, table, FIRSTCHILD(node), 0, boolean);
         printf("|| ");
-        right = expr_type(program, table, SECONDCHILD(node), 0);
+        right = expr_type(program, table, SECONDCHILD(node), 0, boolean);
         return INT;
     case and:
-        left = expr_type(program, table, FIRSTCHILD(node), 0);
+        left = expr_type(program, table, FIRSTCHILD(node), 0, boolean);
         printf("&& ");
-        right = expr_type(program, table, SECONDCHILD(node), 0);
+        right = expr_type(program, table, SECONDCHILD(node), 0, boolean);
         return INT;
     
     case order:
     case eq:
-        left = expr_type(program, table, FIRSTCHILD(node), 0);
+        left = expr_type(program, table, FIRSTCHILD(node), 0, boolean);
         printf("%s ", node->data.ident);
-        right = expr_type(program, table, SECONDCHILD(node), 0);
+        right = expr_type(program, table, SECONDCHILD(node), 0, boolean);
         if ((left == CHAR && right == INT) || (left == INT && right == CHAR))
             fprintf(stderr, "\nLine %d -> Warning : Operation between CHAR and INT variables\n", err_line);
         return INT;
 
     case exclamation:
         printf("!");
-        return expr_type(program, table, FIRSTCHILD(node), 0);
+        return expr_type(program, table, FIRSTCHILD(node), 0, boolean);
 
     default:
         printf("DEFAULT : %s\n", node->data.ident);
@@ -480,7 +489,7 @@ int treeToSymbol(Node *node, Program_Table * table) {
         case affectation:
             err_line = node->lineno;
             printf("\naffectation : ");
-            type = expr_type(table, get_last_function(func), FIRSTCHILD(node), 1);
+            type = expr_type(table, get_last_function(func), FIRSTCHILD(node), 1, 0);
             printf("\n\tType : %s\n", type_to_string(type));
             if (type == DEFAULT) {
                 fprintf(stderr, "\nLine %d -> Semantic Error : Type of Expr\n", err_line);
@@ -493,7 +502,7 @@ int treeToSymbol(Node *node, Program_Table * table) {
             break;
         case IDENTs:
             printf("IDENTS : %s\n", node->firstChild->data.ident);
-            type = expr_type(table, get_last_function(func), FIRSTCHILD(node), 0);
+            type = expr_type(table, get_last_function(func), FIRSTCHILD(node), 0, 0);
             printf("\n\tType : %s\n", type_to_string(type));
             if (type == DEFAULT) {
                 fprintf(stderr, "\nSemantic Error : Type of Expr\n");
@@ -502,17 +511,25 @@ int treeToSymbol(Node *node, Program_Table * table) {
             break;
         case _if:
             printf("\nif ( ");
-            type = expr_type(table, get_last_function(func), FIRSTCHILD(node), 0);
+            type = expr_type(table, get_last_function(func), FIRSTCHILD(node), 0, 1);
             printf(") \n");
             printf("\tIF type : %s\n", type_to_string(type));
+            if (type == DEFAULT) {
+                fprintf(stderr, "Line %d -> Semantic Error : Type of Expr\n", err_line);
+                return 1;
+            }
             break;
         case _else:           
             break;
         case _while:
             printf("\nwhile ( ");
-            type = expr_type(table, get_last_function(func), FIRSTCHILD(node), 0);
+            type = expr_type(table, get_last_function(func), FIRSTCHILD(node), 0, 1);
             printf(") \n");
             printf("\tWHILE type : %s\n", type_to_string(type));
+            if (type == DEFAULT) {
+                fprintf(stderr, "Line %d -> Semantic Error : Type of Expr\n", err_line);
+                return 1;
+            }
             break;
         default:
             break;

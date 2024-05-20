@@ -146,7 +146,7 @@ int get_last_adress(Symbols_Table* sym_table);
 /* case ident from the function expr_type 
  * Return the type of the node which has the label `ident`
 */
-Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue);
+Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue, int boolean);
 
 
 // CORE FUNCTIONS //
@@ -154,7 +154,7 @@ Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node
 /* Return the type of the expr followed by the affection node
  * DEFAULT if assembling wrong types
 */
-Type expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue);
+Type expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue, int boolean);
 
 /* Add a symbol to the symbol table 
  * we suppose that the table as enough space left for the symbol

@@ -1,11 +1,9 @@
-void etoile(void) {
-    ;
+int test(int tab[]) {
+    return 1;
 }
 
 int main(void) {
-    int x[10];
-    int y;
-    y = etoile();
-
+    int x[2];
+    if (x) return 2;
     return 10;
 }
