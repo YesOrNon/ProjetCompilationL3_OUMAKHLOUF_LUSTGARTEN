@@ -117,7 +117,7 @@ int check_name_conflict(Symbols_Table *local_vars_table, Symbols_Table *param_ta
  * If the types are correct, return the number of args used
  * Else return -1
 */
-int count_args(Node * node, Program_Table * program, Function_Table * function, Function_Table * used_from);
+int count_args(Node * node, Program_Table * program, Function_Table * function, Function_Table * used_from, int boolean);
 
 /* Compare the number of args used (`count`) 
  * with the number of args that the function takes (`signature`)

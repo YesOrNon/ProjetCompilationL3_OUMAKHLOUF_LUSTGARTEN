@@ -2,8 +2,11 @@ int test(int tab[]) {
     return 1;
 }
 
+void yep(int num) {;}
+
 int main(void) {
     int x[2];
-    if (x) return 2;
+    int y;
+    if (yep(10) && y);
     return 10;
 }

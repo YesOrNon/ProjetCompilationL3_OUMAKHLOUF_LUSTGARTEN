@@ -375,7 +375,6 @@ int main(int argc, char* argv[]){
         print_program_table(S);
     }
     cToAsm(arbre, file, S);
-    // print_program_table(S); // option -s à faire
     deleteTree(arbre);
     printf("normal return, tree_error : %d, parse_error : %d\n", tree_error, parse_error);
     return tree_error;

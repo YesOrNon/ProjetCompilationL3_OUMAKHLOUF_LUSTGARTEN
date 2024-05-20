@@ -1,0 +1,5 @@
+void test(int num) {;}
+
+int main(void) {
+    if (test(10));
+}

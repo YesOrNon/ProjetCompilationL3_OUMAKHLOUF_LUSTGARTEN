@@ -163,12 +163,18 @@ Function_Table * get_function(Program_Table* program, char *ident) {
     return NULL;
 }
 
-int count_args(Node * node, Program_Table * program, Function_Table * function, Function_Table * used_from) {
+int count_args(Node * node, Program_Table * program, Function_Table * function, Function_Table * used_from, int boolean) {
     int i = 0; Type type;
     Node * child = FIRSTCHILD(node);
+    printf("node : %s\n", node->data.ident);
     err_line = node->lineno;
     while (child != NULL)   {
-        type = expr_type(program, used_from, child, 0, 0);
+        type = expr_type(program, used_from, child, 0, boolean);
+        if (boolean && (type == DEFAULT || type == VOID_)) {
+            fprintf(stderr, "Line %d -> Semantic Error : Type of Expr in boolean\n", err_line);
+            return -1;
+        }
+
         if (type != function->header->tab[i].type) {
             fprintf(stderr, "Line %d -> Semantic Error : Type of the argument \"%s\" in function \"%s\"\n", err_line, child->data.ident, function->ident);
             fprintf(stderr, "Line %d -> Expected : %s, Actual : %s\n", err_line, type_to_string(function->header->tab[i].type), type_to_string(type));
@@ -184,6 +190,7 @@ int function_parameters(Function_Table * table, int count) {
     if (count == -1) return 0;
     int signature = table->header->index;
     int message = signature - count;
+    printf("signature : %d | count : %d\n", signature, count);
     if (message > 0) 
         fprintf(stderr, "Line %d -> Semantic Error : Missing %d arguments in the function \"%s\"\n", err_line, message, table->ident);
     if (message < 0)
@@ -266,10 +273,14 @@ Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node
             fprintf(stderr, "Line %d -> Semantic Error : Function \"%s\" is not defined\n", err_line, node->data.ident);
             return DEFAULT;
         }
+        else if (strcmp(symbol->ident, "main") == 0) {
+            fprintf(stderr, "Line %d -> Semantic Error : \"main\" function cannot be called\n", err_line);
+            return DEFAULT;
+        }
         tmp = get_function(program, node->data.ident);
         right = tmp->type_ret;
-        if (FIRSTCHILD(node) && !function_parameters(tmp, count_args(node->firstChild, program, tmp, table))) right = DEFAULT;
-        else if (node->nextSibling && !function_parameters(tmp, count_args(node->nextSibling, program, tmp, table))) right = DEFAULT;
+        if (FIRSTCHILD(node) && !function_parameters(tmp, count_args(node->firstChild, program, tmp, table, boolean))) right = DEFAULT;
+        else if (node->nextSibling && !function_parameters(tmp, count_args(node->nextSibling, program, tmp, table, boolean))) right = DEFAULT;
         printf(") ");
         return right;
     }
@@ -281,7 +292,7 @@ Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node
             Symbol * symbol = find_Symbol(program->globals, node->data.ident);
             if (symbol == NULL) symbol = find_Symbol(table->header, node->data.ident);
             if (symbol == NULL) symbol = find_Symbol(table->body, node->data.ident);
-            if (symbol && symbol->size > 4) {  // Array used as an ident (only works with arrays of size > 1) (blocks usage in function call, so not good)
+            if (symbol && symbol->size > 4) {  // Array used as an ident (only works with arrays of size > 1)
                 fprintf(stderr, "Line %d -> Semantic Error : Identifier \"%s\" is an array\n", err_line, node->data.ident);
                 return DEFAULT;
             }
@@ -383,7 +394,8 @@ int add_symbol(Symbols_Table* sym_table, Symbol symbol) {
         fprintf(stderr, "Line %d -> Semantic Error : identifier \"%s\" already exists\n", err_line, symbol.ident);
         return 1;
     }
-    symbol.deplct = get_last_adress(sym_table) + symbol.size;
+    if (symbol.size == -4) symbol.deplct = get_last_adress(sym_table) + 4;  // Array without index
+    else    symbol.deplct = get_last_adress(sym_table) + symbol.size;
     sym_table->tab[sym_table->index++] = symbol;
     return 0;
 }
@@ -400,6 +412,7 @@ int add_Symbols_to_Table(Node *node, Symbols_Table * table){
                     return 1;
                 }
             }
+            else tab.size = -4;
             if (add_symbol(table, tab)) return 1;
         }
         else {
@@ -464,6 +477,11 @@ int treeToSymbol(Node *node, Program_Table * table) {
             if (add_Symbols_to_Table(FIRSTCHILD(node), table->globals)) return 1;
             break;
         case fonction:
+            err_line = node->lineno;
+            if (!node->nextSibling && strcmp(FIRSTCHILD(FIRSTCHILD(node))->nextSibling->data.ident, "main") != 0) {
+                fprintf(stderr, "Line %d -> Semantic Error : main function should be the last function\n", err_line);
+                return 1;
+            }
             if (!table->functions){
                 table->functions = init_Func_table();
                 if (add_Function(node, table->functions, table))   return 1;
@@ -514,7 +532,7 @@ int treeToSymbol(Node *node, Program_Table * table) {
             type = expr_type(table, get_last_function(func), FIRSTCHILD(node), 0, 1);
             printf(") \n");
             printf("\tIF type : %s\n", type_to_string(type));
-            if (type == DEFAULT) {
+            if (type == DEFAULT || type == VOID_) {
                 fprintf(stderr, "Line %d -> Semantic Error : Type of Expr\n", err_line);
                 return 1;
             }
