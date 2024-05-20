@@ -1,19 +1,11 @@
-
-int test(int tab[]) {
-    return 1;
-}
-
-void blabla(void) {
-    return;
+void etoile(void) {
+    ;
 }
 
 int main(void) {
     int x[10];
     int y;
+    y = etoile();
 
-    test(y);
-
-    y = blabla();
-
-    return 0;
+    return 10;
 }

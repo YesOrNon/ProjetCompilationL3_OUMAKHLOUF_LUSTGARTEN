@@ -5,6 +5,8 @@
 #include "../try.h"
 #include <stdbool.h>
 
+int err_line = 0;
+
 
 // INIT //
 
@@ -74,22 +76,27 @@ void free_Program_table(Program_Table* prog_table) {
 
 // USEFULL FUNCTIONS //
 
-Type get_return_type(Node *node, Function_Table * table, Program_Table * program, Type wanted, Type last) {
+Type get_return_type(Node *node, Function_Table * table, Program_Table * program, Type wanted, Type *last) {
     if (node->label == _return) {
         if (FIRSTCHILD(node))
-            last = expr_type(program, table, FIRSTCHILD(node), 0);
+            *last = expr_type(program, table, FIRSTCHILD(node), 0);
         else
-            last = DEFAULT;
+            *last = VOID_;
     }
     for (Node *child = FIRSTCHILD(node); child != NULL && table->type_ret != VOID_; child = child->nextSibling) {
-        if (last != DEFAULT) {
-            if ((wanted == INT || wanted == CHAR) && (last != INT && last != CHAR)) {
+        err_line = child->lineno;
+        if (*last != DEFAULT) {
+            if (*last == VOID_) {
+                fprintf(stderr, "Line %d -> Semantic Error : Function \"%s\" returns a value of type \"void\"\n", err_line, table->ident);
+                return DEFAULT;
+            }
+            if ((wanted == INT || wanted == CHAR) && (*last != INT && *last != CHAR)) {
                 return DEFAULT;
             }
         }
-        last = get_return_type(child, table, program, wanted, last);
+        get_return_type(child, table, program, wanted, last);
     }
-    return last;
+    return *last == VOID_ ? DEFAULT : *last;
 }
 
 Type find_Symbol_type(Symbols_Table * sym_table, char * ident) {
@@ -122,7 +129,8 @@ int isPresent(Symbols_Table* sym_table, char* ident) {
 int isPresent_all(Program_Table *table, Node* node) {
     int globals = 0, header = 0, body = 0;
     Function_Table* func = table->functions;
-    globals = isPresent(table->globals, node->data.ident);    
+    globals = isPresent(table->globals, node->data.ident);
+    err_line = node->lineno;    
     if (func != NULL) {
         while (func->next != NULL) {
             func = func->next;
@@ -136,7 +144,7 @@ int isPresent_all(Program_Table *table, Node* node) {
 int check_name_conflict(Symbols_Table *local_vars_table, Symbols_Table *param_table) {
     for (int i = 0; i < local_vars_table->index; i++) {
         if (isPresent(param_table, local_vars_table->tab[i].ident)) {
-            fprintf(stderr, "Semantic Error : identifier \"%s\" already exists in parameters\n", local_vars_table->tab[i].ident);
+            fprintf(stderr, "Line %d -> Semantic Error : identifier \"%s\" already exists in parameters\n", err_line, local_vars_table->tab[i].ident);
             return 1;
         }
     }
@@ -158,11 +166,12 @@ Function_Table * get_function(Program_Table* program, char *ident) {
 int count_args(Node * node, Program_Table * program, Function_Table * function, Function_Table * used_from) {
     int i = 0; Type type;
     Node * child = FIRSTCHILD(node);
+    err_line = node->lineno;
     while (child != NULL)   {
         type = expr_type(program, used_from, child, 0);
         if (type != function->header->tab[i].type) {
-            fprintf(stderr, "Semantic Error : Type of the argument \"%s\" in function \"%s\"\n", child->data.ident, function->ident);
-            fprintf(stderr, "Expected : %s, Actual : %s\n", type_to_string(function->header->tab[i].type), type_to_string(type));
+            fprintf(stderr, "Line %d -> Semantic Error : Type of the argument \"%s\" in function \"%s\"\n", err_line, child->data.ident, function->ident);
+            fprintf(stderr, "Line %d -> Expected : %s, Actual : %s\n", err_line, type_to_string(function->header->tab[i].type), type_to_string(type));
             return -1;
         }
         child = child->nextSibling;
@@ -176,9 +185,9 @@ int function_parameters(Function_Table * table, int count) {
     int signature = table->header->index;
     int message = signature - count;
     if (message > 0) 
-        fprintf(stderr, "Semantic Error : Missing %d arguments in the function \"%s\"\n", message, table->ident);
+        fprintf(stderr, "Line %d -> Semantic Error : Missing %d arguments in the function \"%s\"\n", err_line, message, table->ident);
     if (message < 0)
-        fprintf(stderr, "Semantic Error : Too many arguments in the function \"%s\"\n", table->ident);
+        fprintf(stderr, "Line %d -> Semantic Error : Too many arguments in the function \"%s\"\n", err_line, table->ident);
     return signature == count;
 }
 
@@ -236,7 +245,7 @@ Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node
         if (left == DEFAULT) left = find_Symbol_type(program->globals, node->data.ident);
         right = expr_type(program, table, node->nextSibling, 0);
         if (left == CHAR && right == INT) {
-            fprintf(stderr, "\nWarning : Operation between CHAR and INT variables\n");
+            fprintf(stderr, "\nLine %d -> Warning : Operation between CHAR and INT variables\n", err_line);
             return INT;
         }
         else if (left == INT && right == CHAR)  return INT;
@@ -254,7 +263,7 @@ Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node
         printf("( ");
         Symbol * symbol = find_Symbol(program->globals, node->data.ident);
         if (symbol == NULL || symbol->type != FUNCTION) {
-            fprintf(stderr, "Semantic Error : Function \"%s\" is not defined\n", node->data.ident);
+            fprintf(stderr, "Line %d -> Semantic Error : Function \"%s\" is not defined\n", err_line, node->data.ident);
             return DEFAULT;
         }
         tmp = get_function(program, node->data.ident);
@@ -277,7 +286,8 @@ Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node
 
 Type expr_type(Program_Table* program, Function_Table* table, Node * node, int Lvalue) {
     Type left, right;
-    Symbol * symbol;    
+    Symbol * symbol;
+    err_line = node->lineno;
     switch (node->label) {
 
     case ident:
@@ -296,7 +306,7 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
         printf("%c ", node->data.byte);
         right = expr_type(program, table, SECONDCHILD(node), 0);
         if ((left == CHAR && right == INT) || (left == INT && right == CHAR))
-            fprintf(stderr, "\nWarning : Operation between CHAR and INT variables\n");
+            fprintf(stderr, "\nLine -> %d Warning : Operation between CHAR and INT variables\n", err_line);
         return INT;
 
     case divstar:
@@ -315,7 +325,7 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
         if (symbol == NULL) symbol = find_Symbol(table->header, node->data.ident);
         if (symbol == NULL) symbol = find_Symbol(program->globals, node->data.ident);
         if (symbol == NULL) {
-            fprintf(stderr, "Semantic Error : Identifier \"%s\" is not defined\n", node->data.ident);
+            fprintf(stderr, "Line %d -> Semantic Error : Identifier \"%s\" is not defined\n", err_line, node->data.ident);
             return DEFAULT;
         }
         if (Lvalue) {
@@ -346,7 +356,7 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
         printf("%s ", node->data.ident);
         right = expr_type(program, table, SECONDCHILD(node), 0);
         if ((left == CHAR && right == INT) || (left == INT && right == CHAR))
-            fprintf(stderr, "\nWarning : Operation between CHAR and INT variables\n");
+            fprintf(stderr, "\nLine %d -> Warning : Operation between CHAR and INT variables\n", err_line);
         return INT;
 
     case exclamation:
@@ -361,7 +371,7 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
 
 int add_symbol(Symbols_Table* sym_table, Symbol symbol) {
     if (isPresent(sym_table, symbol.ident)) {
-        fprintf(stderr, "Semantic Error : identifier \"%s\" already exists\n", symbol.ident);
+        fprintf(stderr, "Line %d -> Semantic Error : identifier \"%s\" already exists\n", err_line, symbol.ident);
         return 1;
     }
     symbol.deplct = get_last_adress(sym_table) + symbol.size;
@@ -372,17 +382,19 @@ int add_symbol(Symbols_Table* sym_table, Symbol symbol) {
 int add_Symbols_to_Table(Node *node, Symbols_Table * table){
     if (node->label == type) {
         if (FIRSTCHILD(node)->label == ident_tab) {
+            err_line = FIRSTCHILD(node)->lineno;
             Symbol tab = make_symbol(FIRSTCHILD(node)->data.ident, INT);
             if (FIRSTCHILD(FIRSTCHILD(node))) { // Array with index
                 tab.size *= FIRSTCHILD(FIRSTCHILD(node))->data.num;
                 if (tab.size == 0) {
-                    fprintf(stderr, "Semantic Error : Array size must be greater than 0\n");
+                    fprintf(stderr, "Line %d -> Semantic Error : Array size must be greater than 0\n", err_line);
                     return 1;
                 }
             }
             if (add_symbol(table, tab)) return 1;
         }
         else {
+            err_line = FIRSTCHILD(node)->lineno;
             if (add_symbol(table, make_symbol(FIRSTCHILD(node)->data.ident, string_to_type(node->data.comp))))  return 1;
             if (FIRSTCHILD(node)->nextSibling) {
                 Node * sibling = FIRSTCHILD(node)->nextSibling;
@@ -394,6 +406,7 @@ int add_Symbols_to_Table(Node *node, Symbols_Table * table){
         }
     }
     for (Node *child = FIRSTCHILD(node); child != NULL; child = child->nextSibling) {
+        err_line = child->lineno;
         if (add_Symbols_to_Table(child, table)) return 1;
     }
     return 0;
@@ -401,6 +414,7 @@ int add_Symbols_to_Table(Node *node, Symbols_Table * table){
 
 int add_Function(Node *node, Function_Table * table, Program_Table * program){
     int error = 0;
+    err_line = node->lineno;
     Node * header = FIRSTCHILD(node);
     Node * type = FIRSTCHILD(header);
     Node * ident = SECONDCHILD(header);
@@ -412,18 +426,23 @@ int add_Function(Node *node, Function_Table * table, Program_Table * program){
     if (add_Symbols_to_Table(FIRSTCHILD(body), table->body)) return 1;
     if (check_name_conflict(table->body, table->header)) {fprintf(stderr, "of the function : %s\n", ident->data.ident); return 1;}
     printf("\nFunction : %s\n", ident->data.ident);
-    Type ret = get_return_type(body, table, program, table->type_ret, DEFAULT);
+    Type last = DEFAULT; Type *last_ptr = &last;
+    Type ret = get_return_type(body, table, program, table->type_ret, last_ptr);
     printf("\n\tReturn type : %s\n", type_to_string(ret));
     if ((strcmp(ident->data.ident, "main") == 0) && (table->type_ret != INT || (ret != INT && ret != CHAR))) {
-        fprintf(stderr, "Semantic Error : \"main\" function must have the type \"int\" and return an \"int\"\n");
+        fprintf(stderr, "Line %d ->Semantic Error : \"main\" function must have the type \"int\" and return an \"int\"\n", err_line);
         fprintf(stderr, "Actual : %s\n", type_to_string(table->type_ret));
         fprintf(stderr, "Type of the value returned : %s\n", type_to_string(ret));
         error++;
     }
-    if (ret == INT && table->type_ret == CHAR)
-        fprintf(stderr, "Warning : Function \"%s\" has the type \"char\" and returns an \"int\"\n", ident->data.ident);
-    if (ret == CHAR && table->type_ret == INT)
-        fprintf(stderr, "Warning : Function \"%s\" has the type \"int\" and returns a \"char\"\n", ident->data.ident);
+    else if (ret == INT && table->type_ret == CHAR)
+        fprintf(stderr, "Line %d -> Warning : Function \"%s\" has the type \"char\" and returns an \"int\"\n", err_line, ident->data.ident);
+    else if (ret == CHAR && table->type_ret == INT)
+        fprintf(stderr, "Line %d -> Warning : Function \"%s\" has the type \"int\" and returns a \"char\"\n", err_line, ident->data.ident);
+    else if (ret == DEFAULT && table->type_ret != VOID_) {
+        fprintf(stderr, "Line %d -> Semantic Error : Function \"%s\" does not return a value\n", err_line, ident->data.ident);
+        error++;
+    }
     return error;
 }
 
@@ -432,6 +451,7 @@ int treeToSymbol(Node *node, Program_Table * table) {
     Function_Table* func = table->functions;
     switch (node->label) {
         case program:
+            err_line = node->lineno;
             if (add_Symbols_to_Table(FIRSTCHILD(node), table->globals)) return 1;
             break;
         case fonction:
@@ -448,24 +468,26 @@ int treeToSymbol(Node *node, Program_Table * table) {
             if (add_symbol(table->globals, make_symbol(SECONDCHILD(FIRSTCHILD(node))->data.ident, FUNCTION)))   return 1;
             break;
         case ident:
+            err_line = node->lineno;
             if (!isPresent_all(table, node)) {
                 if (strcmp(node->data.ident, "getint") == 0);
                 else if (strcmp(node->data.ident, "getchar") == 0);
                 else if (strcmp(node->data.ident, "putchar") == 0);
                 else if (strcmp(node->data.ident, "putint") == 0);
-                else    {fprintf(stderr, "Semantic Error : \"%s\" is not defined\n", node->data.ident); return 1;}
+                else    {fprintf(stderr, "Line %d -> Semantic Error : \"%s\" is not defined\n", err_line, node->data.ident); return 1;}
             }
             break;
         case affectation:
+            err_line = node->lineno;
             printf("\naffectation : ");
             type = expr_type(table, get_last_function(func), FIRSTCHILD(node), 1);
             printf("\n\tType : %s\n", type_to_string(type));
             if (type == DEFAULT) {
-                fprintf(stderr, "\nSemantic Error : Type of Expr\n");
+                fprintf(stderr, "\nLine %d -> Semantic Error : Type of Expr\n", err_line);
                 return 1;
             }
             else if (type == VOID_) {
-                fprintf(stderr, "A function of type \"void\" is used as an Rvalue\n");
+                fprintf(stderr, "Line %d -> Semantic Error : A function of type \"void\" is used as an Rvalue\n", err_line);
                 return 1;
             }
             break;
@@ -483,6 +505,14 @@ int treeToSymbol(Node *node, Program_Table * table) {
             type = expr_type(table, get_last_function(func), FIRSTCHILD(node), 0);
             printf(") \n");
             printf("\tIF type : %s\n", type_to_string(type));
+            break;
+        case _else:           
+            break;
+        case _while:
+            printf("\nwhile ( ");
+            type = expr_type(table, get_last_function(func), FIRSTCHILD(node), 0);
+            printf(") \n");
+            printf("\tWHILE type : %s\n", type_to_string(type));
             break;
         default:
             break;
