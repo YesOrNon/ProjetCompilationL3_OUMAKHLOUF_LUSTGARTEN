@@ -1,0 +1,8 @@
+void test();
+
+int main(void) {
+    int x;
+    int y;
+
+    if (x || test());
+}

@@ -315,7 +315,8 @@ int write_if(FILE * anonymous, Node *node, Program_Table* program, int _else){
                         "\tcmp r8, 0           ;\n"
                         "\tje .jump_to_endif%d  ;\n",
                         end_condition);
-    cToAsm(SECONDCHILD(node), anonymous,  program);
+    if (SECONDCHILD(node))
+        cToAsm(SECONDCHILD(node), anonymous,  program);
     if (_else) {fprintf(anonymous, "\tjmp .jump_to_endelse%d\n", end_condition);}
     fprintf(anonymous, ".jump_to_endif%d         ; ##### end IF #####\n", end_condition);
     return end_condition;

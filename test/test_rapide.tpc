@@ -1,12 +1,12 @@
-int test(int tab[]) {
+int test(void) {
     return 1;
 }
 
-void yep(int num) {;}
+void yep(void) {;}
 
 int main(void) {
     int x[2];
     int y;
-    if (yep(10) && y);
+    if (10 || 120 || 10 && y && test()) {return 20;}
     return 10;
 }

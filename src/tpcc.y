@@ -365,7 +365,7 @@ int main(int argc, char* argv[]){
 
     if (treeOption) printTree(arbre);
     tree_error = treeToSymbol(arbre, S);
-
+    
     if (tree_error) {
         printf("tree_error : %d\n", tree_error);
         deleteTree(arbre);

@@ -166,8 +166,10 @@ Function_Table * get_function(Program_Table* program, char *ident) {
 int count_args(Node * node, Program_Table * program, Function_Table * function, Function_Table * used_from, int boolean) {
     int i = 0; Type type;
     Node * child = FIRSTCHILD(node);
-    printf("node : %s\n", node->data.ident);
     err_line = node->lineno;
+    //
+    // regarder tableau ici
+    ///
     while (child != NULL)   {
         type = expr_type(program, used_from, child, 0, boolean);
         if (boolean && (type == DEFAULT || type == VOID_)) {
@@ -190,7 +192,6 @@ int function_parameters(Function_Table * table, int count) {
     if (count == -1) return 0;
     int signature = table->header->index;
     int message = signature - count;
-    printf("signature : %d | count : %d\n", signature, count);
     if (message > 0) 
         fprintf(stderr, "Line %d -> Semantic Error : Missing %d arguments in the function \"%s\"\n", err_line, message, table->ident);
     if (message < 0)
@@ -279,8 +280,12 @@ Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node
         }
         tmp = get_function(program, node->data.ident);
         right = tmp->type_ret;
-        if (FIRSTCHILD(node) && !function_parameters(tmp, count_args(node->firstChild, program, tmp, table, boolean))) right = DEFAULT;
-        else if (node->nextSibling && !function_parameters(tmp, count_args(node->nextSibling, program, tmp, table, boolean))) right = DEFAULT;
+        if (FIRSTCHILD(node)) {
+            if (!function_parameters(tmp, count_args(node->firstChild, program, tmp, table, boolean))) right = DEFAULT;
+        }
+        else if (node->nextSibling) { 
+            if(!function_parameters(tmp, count_args(node->nextSibling, program, tmp, table, boolean))) right = DEFAULT;
+        }
         printf(") ");
         return right;
     }
@@ -295,6 +300,12 @@ Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node
             if (symbol && symbol->size > 4) {  // Array used as an ident (only works with arrays of size > 1)
                 fprintf(stderr, "Line %d -> Semantic Error : Identifier \"%s\" is an array\n", err_line, node->data.ident);
                 return DEFAULT;
+            }
+            else if (symbol && symbol->type == FUNCTION) {  // function in boolean
+                if (!FIRSTCHILD(node)) {
+                    fprintf(stderr, "Line %d -> Semantic Error : Function \"%s\" is missing ()\n", err_line, node->data.ident);
+                    return DEFAULT;
+                }
             }
         }
     }   
@@ -363,11 +374,17 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
         left = expr_type(program, table, FIRSTCHILD(node), 0, boolean);
         printf("|| ");
         right = expr_type(program, table, SECONDCHILD(node), 0, boolean);
+        if (left == DEFAULT || right == DEFAULT || left == VOID_ || right == VOID_) {
+            return DEFAULT;
+        }
         return INT;
     case and:
         left = expr_type(program, table, FIRSTCHILD(node), 0, boolean);
         printf("&& ");
         right = expr_type(program, table, SECONDCHILD(node), 0, boolean);
+        if (left == DEFAULT || right == DEFAULT || left == VOID_ || right == VOID_) {
+            return DEFAULT;
+        }
         return INT;
     
     case order:
@@ -375,7 +392,10 @@ Type expr_type(Program_Table* program, Function_Table* table, Node * node, int L
         left = expr_type(program, table, FIRSTCHILD(node), 0, boolean);
         printf("%s ", node->data.ident);
         right = expr_type(program, table, SECONDCHILD(node), 0, boolean);
-        if ((left == CHAR && right == INT) || (left == INT && right == CHAR))
+        if (left == DEFAULT || right == DEFAULT || left == VOID_ || right == VOID_) {
+            return DEFAULT;
+        }
+        else if ((left == CHAR && right == INT) || (left == INT && right == CHAR))
             fprintf(stderr, "\nLine %d -> Warning : Operation between CHAR and INT variables\n", err_line);
         return INT;
 
@@ -394,7 +414,7 @@ int add_symbol(Symbols_Table* sym_table, Symbol symbol) {
         fprintf(stderr, "Line %d -> Semantic Error : identifier \"%s\" already exists\n", err_line, symbol.ident);
         return 1;
     }
-    if (symbol.size == -4) symbol.deplct = get_last_adress(sym_table) + 4;  // Array without index
+    if (symbol.size == -8) symbol.deplct = get_last_adress(sym_table) + 8;  // Array without index
     else    symbol.deplct = get_last_adress(sym_table) + symbol.size;
     sym_table->tab[sym_table->index++] = symbol;
     return 0;
@@ -412,7 +432,7 @@ int add_Symbols_to_Table(Node *node, Symbols_Table * table){
                     return 1;
                 }
             }
-            else tab.size = -4;
+            else tab.size = -8;
             if (add_symbol(table, tab)) return 1;
         }
         else {
