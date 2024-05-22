@@ -165,26 +165,38 @@ Function_Table * get_function(Program_Table* program, char *ident) {
 
 int count_args(Node * node, Program_Table * program, Function_Table * function, Function_Table * used_from, int boolean) {
     int i = 0; Type type;
+    int index = function->header->index - 1;
     Node * child = FIRSTCHILD(node);
     err_line = node->lineno;
-    //
-    // regarder tableau ici
-    ///
     while (child != NULL)   {
+        
         type = expr_type(program, used_from, child, 0, boolean);
         if (boolean && (type == DEFAULT || type == VOID_)) {
             fprintf(stderr, "Line %d -> Semantic Error : Type of Expr in boolean\n", err_line);
             return -1;
         }
-
-        if (type != function->header->tab[i].type) {
+        if (type != function->header->tab[index - i].type) {
             fprintf(stderr, "Line %d -> Semantic Error : Type of the argument \"%s\" in function \"%s\"\n", err_line, child->data.ident, function->ident);
             fprintf(stderr, "Line %d -> Expected : %s, Actual : %s\n", err_line, type_to_string(function->header->tab[i].type), type_to_string(type));
             return -1;
         }
+        else if (function->header->tab[index - i].size == -8) { // array in function header
+            if (child->label == num) {
+                fprintf(stderr, "Line %d -> Semantic Error : Type of the argument \"%d\" in function \"%s\"\n", err_line, child->data.num, function->ident);
+                fprintf(stderr, "Line %d -> Expected : TAB, Actual : INT\n", err_line);
+                return -1;
+            }
+            Symbol * symbol = find_Symbol(program->globals, child->data.ident);
+            if (symbol == NULL) symbol = find_Symbol(used_from->body, child->data.ident);
+            printf("debug 2: %s\n", child->data.ident);
+            if (symbol->size <= 4) {
+                fprintf(stderr, "Line %d -> Semantic Error : Identifier \"%s\" is not an array\n", err_line, child->data.ident);
+                return -1;
+            }
+        }
         child = child->nextSibling;
         i++;
-        }
+    }
     return i;
 }
 
