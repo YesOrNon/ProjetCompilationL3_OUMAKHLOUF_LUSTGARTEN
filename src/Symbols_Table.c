@@ -78,8 +78,10 @@ void free_Program_table(Program_Table* prog_table) {
 
 Type get_return_type(Node *node, Function_Table * table, Program_Table * program, Type wanted, Type *last) {
     if (node->label == _return) {
-        if (FIRSTCHILD(node))
+        if (FIRSTCHILD(node)) {
+            printf("\tReturn : ");
             *last = expr_type(program, table, FIRSTCHILD(node), 0, 0);
+        }
         else
             *last = VOID_;
     }
