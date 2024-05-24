@@ -1,0 +1,7 @@
+int main(void) {
+    int x, y, z;
+    x = 1;
+    y = 2;
+    z = 7 - y - x - 1;
+    return 7;
+}

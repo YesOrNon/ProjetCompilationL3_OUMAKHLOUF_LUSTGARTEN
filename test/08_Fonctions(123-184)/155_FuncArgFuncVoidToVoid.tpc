@@ -1,0 +1,14 @@
+int autre(void) {
+    return 7;
+}
+
+void fct(){
+    return;
+}
+
+int main(void) {
+    int res;
+    int tab[7];
+    res = autre(fct());
+    return 7;
+}

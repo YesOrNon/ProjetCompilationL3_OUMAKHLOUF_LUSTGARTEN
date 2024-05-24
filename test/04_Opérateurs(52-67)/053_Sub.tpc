@@ -1,0 +1,5 @@
+int main(void) {
+    int x;
+    x = 7 - 1;
+    return 7;
+}

@@ -1,0 +1,3 @@
+int noMain(void){
+    return 1;
+}

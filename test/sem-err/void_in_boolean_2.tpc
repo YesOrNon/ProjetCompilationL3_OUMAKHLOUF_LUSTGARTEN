@@ -1,9 +1,0 @@
-void test(void) {;}
-
-int main(void) {
-    int x;
-    int y;
-
-    if (x || test());
-    return 1;
-}

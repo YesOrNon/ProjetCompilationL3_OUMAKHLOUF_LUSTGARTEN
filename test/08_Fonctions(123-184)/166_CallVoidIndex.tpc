@@ -1,0 +1,9 @@
+void autre() {
+    return;
+}
+
+int main(void) {
+    int tab[7];
+    tab[autre()] = 2;
+    return 7;
+}

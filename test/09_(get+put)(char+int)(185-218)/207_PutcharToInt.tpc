@@ -1,0 +1,5 @@
+int main(void) {
+    int x;
+    x = putchar();
+    return 7;
+}

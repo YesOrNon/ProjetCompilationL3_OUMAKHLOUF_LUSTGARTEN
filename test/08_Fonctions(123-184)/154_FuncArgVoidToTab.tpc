@@ -1,0 +1,9 @@
+int autre(int tab[]) {
+    return tab[0] * 7;
+}
+
+int main(void) {
+    int res;
+    res = autre();
+    return 7;
+}

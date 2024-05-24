@@ -1,0 +1,7 @@
+int autre(int x, char c, int tab[]) {
+    return x + c + tab[0];
+}
+
+int main(void) {
+    return 7;
+}

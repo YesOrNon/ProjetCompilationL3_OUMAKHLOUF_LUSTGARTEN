@@ -1,0 +1,8 @@
+char autre() {
+    return 'c';
+}
+
+int main(void) {
+    autre();
+    return 7;
+}

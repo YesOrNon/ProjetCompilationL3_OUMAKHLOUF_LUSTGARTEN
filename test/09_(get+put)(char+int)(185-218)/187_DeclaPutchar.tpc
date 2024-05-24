@@ -1,0 +1,7 @@
+void putchar(char c) {
+    return;
+}
+
+int main(void) {
+    return 7;
+}

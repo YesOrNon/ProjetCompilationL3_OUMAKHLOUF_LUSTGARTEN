@@ -1,0 +1,10 @@
+int autre(int x) {
+    return x * 7;
+}
+
+int main(void) {
+    int res;
+    int tab[7];
+    res = autre(tab);
+    return 7;
+}

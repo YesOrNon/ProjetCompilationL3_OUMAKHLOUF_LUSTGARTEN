@@ -1,0 +1,4 @@
+int main(void) {
+    putchar('c', 'a');
+    return 7;
+}

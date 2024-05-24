@@ -1,0 +1,6 @@
+int main(void) {
+    int x; 
+    x = 2147483649;
+    x = -2147483649;
+    return x;
+}

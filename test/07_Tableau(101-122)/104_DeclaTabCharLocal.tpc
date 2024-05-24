@@ -1,0 +1,4 @@
+int main(void) {
+    char tab[7];
+    return 7;
+}

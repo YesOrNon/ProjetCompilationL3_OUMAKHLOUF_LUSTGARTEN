@@ -1,0 +1,7 @@
+int main(void) {
+    int x;
+    int tab[7];
+    x = 5
+    tab[x] = 7;
+    return 7;
+}

@@ -1,0 +1,10 @@
+void autre() {
+    return;
+}
+
+int main(void) {
+    if (autre()){
+        return 1;
+    }
+    return 7;
+}

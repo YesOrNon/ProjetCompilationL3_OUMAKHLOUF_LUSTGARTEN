@@ -1,0 +1,6 @@
+int main(void) {
+    int x;
+    x = !7;
+    x = !'a';
+    return 7;
+}

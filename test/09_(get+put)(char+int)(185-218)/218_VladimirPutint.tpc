@@ -1,0 +1,9 @@
+void vladimir(int x){
+    return;
+}
+
+int main(void) {
+    vladimir(putint(7));
+    /* Je viens d'écrire plus de 200 test, cette blague est ma récompense */
+    return 7;
+}

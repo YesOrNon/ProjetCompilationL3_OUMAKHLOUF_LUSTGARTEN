@@ -1,0 +1,6 @@
+int main(void) {
+    char x;
+    char y;
+    x = y;
+    return 7;
+}

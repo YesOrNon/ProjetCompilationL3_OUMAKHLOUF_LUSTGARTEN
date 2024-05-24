@@ -1,0 +1,8 @@
+int main(void) {
+    int tab[7];
+    tab[77%3] = 2;
+    tab[!8] = 0;
+    tab[10 > 7 && 7 != 2] = 1;
+    tab[5] = tab[7-5];
+    return 7;
+}

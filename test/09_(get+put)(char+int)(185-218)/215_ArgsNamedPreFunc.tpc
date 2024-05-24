@@ -1,0 +1,7 @@
+void autre(char putchar, int putint){
+    return;
+}
+
+int main(void) {
+    return 7;
+}

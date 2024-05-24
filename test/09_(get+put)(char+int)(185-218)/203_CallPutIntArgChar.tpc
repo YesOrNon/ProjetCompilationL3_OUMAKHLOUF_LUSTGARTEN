@@ -1,0 +1,4 @@
+int main(void) {
+    putint('c');
+    return 7;
+}

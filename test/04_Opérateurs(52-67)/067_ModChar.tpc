@@ -1,0 +1,7 @@
+int main(void) {
+    int x;
+    char c;
+    c = 'a'
+    x = 777 % c;
+    return 7;
+}

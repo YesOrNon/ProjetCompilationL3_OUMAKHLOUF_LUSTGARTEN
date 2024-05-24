@@ -1,0 +1,5 @@
+int main(void) {
+    int tab[7];
+    putint(tab);
+    return 7;
+}

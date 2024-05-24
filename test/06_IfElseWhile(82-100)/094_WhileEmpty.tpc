@@ -1,0 +1,4 @@
+int main(void) {
+    while(7);
+    return 7;
+}

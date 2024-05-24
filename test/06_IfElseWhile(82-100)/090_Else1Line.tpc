@@ -1,0 +1,8 @@
+int main(void) {
+    int x;
+    if(7) {
+        x = 7 + 7;
+    }
+    else {return x;}
+    return 7;
+}

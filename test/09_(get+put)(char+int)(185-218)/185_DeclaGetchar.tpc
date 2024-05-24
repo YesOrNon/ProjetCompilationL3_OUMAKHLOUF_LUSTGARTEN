@@ -1,0 +1,7 @@
+char getchar(void) {
+    return 'a';
+}
+
+int main(void) {
+    return 7;
+}

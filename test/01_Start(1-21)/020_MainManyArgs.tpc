@@ -1,0 +1,3 @@
+int main(int arg1, char arg2, int tab1[], char tab2[], int anotherArg){
+    return 1;
+}

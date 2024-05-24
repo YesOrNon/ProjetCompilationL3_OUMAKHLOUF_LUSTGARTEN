@@ -1,0 +1,7 @@
+void autre(void) {
+    return;
+}
+
+int main(void) {
+    return 7;
+}

@@ -1,0 +1,7 @@
+void getint(int x) {
+    return;
+}
+
+int main(void) {
+    return 7;
+}

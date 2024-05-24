@@ -1,0 +1,6 @@
+int main(void) {
+    int tab[7];
+    int tab2[7];
+    tab[tab2[tab[1]]] = 7;
+    return 7;
+}

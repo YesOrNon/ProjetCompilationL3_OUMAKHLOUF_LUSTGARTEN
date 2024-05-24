@@ -1,0 +1,9 @@
+void fct(void){
+    return;
+}
+
+int main(void) {
+    int x;
+    x = getint(fct());
+    return 7;
+}

@@ -1,0 +1,5 @@
+int main(void) {
+    int tab[300];
+    tab = 7 * 7;
+    return 7;
+}

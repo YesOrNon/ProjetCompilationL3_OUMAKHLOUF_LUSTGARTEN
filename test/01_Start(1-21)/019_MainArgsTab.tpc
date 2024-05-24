@@ -1,0 +1,3 @@
+int main(int tab1[], char tab2[]){
+    return 1;
+}

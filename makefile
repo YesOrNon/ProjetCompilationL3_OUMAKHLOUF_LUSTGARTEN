@@ -18,6 +18,11 @@ OBJDIR=obj
 SRCDIR=src
 INCDIR=include
 
+all: create_dirs $(BINDIR)/$(EXEC)
+
+create_dirs:
+	mkdir -p $(BINDIR) $(OBJDIR) rep
+
 $(BINDIR)/$(EXEC): $(OBJDIR)/$(PARS).o $(OBJDIR)/$(LEX).yy.o $(OBJDIR)/tree.o $(OBJDIR)/Symbols_Table.o $(OBJDIR)/traducteur.o $(OBJDIR)/exit_functions.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
@@ -42,6 +47,10 @@ $(OBJDIR)/$(LEX).yy.c: $(SRCDIR)/$(LEX).lex
 $(OBJDIR)/compil.o: $(OBJDIR)/_anonymous.asm
 	nasm -f elf64 -g -o $@ $<
 
-clean:
-	rm -f $(BINDIR)/* $(OBJDIR)/* rep/rapport.txt bin/* obj/*
+clean_dirs:
+	@if [ -d $(BINDIR) ]; then rm -rf $(BINDIR); fi
+	@if [ -d $(OBJDIR) ]; then rm -rf $(OBJDIR); fi
+	@if [ -d rep ]; then rm -rf rep; fi
 
+clean: clean_dirs
+	rm -f $(BINDIR)/* $(OBJDIR)/*

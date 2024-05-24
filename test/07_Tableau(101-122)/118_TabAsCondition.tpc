@@ -1,0 +1,7 @@
+int main(void) {
+    int tab[7];
+    if (tab) {
+        return 1;
+    }
+    return 7;
+}

@@ -302,7 +302,7 @@ ListExp:
 
 void afficherHelp(){
     printf("\n\n");
-    printf("Utilisation : tpcas [OPTION]... [FICHIER]...\n");
+    printf("Utilisation : tpcc [OPTION]... [FICHIER]...\n");
     printf("Fait l'analyse syntaxique du fichier .tpc redirigé en entrée\n");
     printf("\n[OPTION]\n");
     printf("\t -t, --tree          afficher l'arbre abstrait du fichier analysé\n");
@@ -310,7 +310,7 @@ void afficherHelp(){
     printf("\n[FICHIER]\n");
     printf("\tPour rediriger un fichier ajoutez \"< file.tpc\" à la ligne de commande\n");
     printf("\nExemple\n");
-    printf("\t./pathToExec/tpcas -t < pathToFile/file.tpc\n\n");
+    printf("\t./pathToExec/tpcc -t < pathToFile/file.tpc\n\n");
     printf("État de sortie :\n");
     printf(" 0 en cas de succès (pas d'erreur syntaxique dans le fichier ou option qui met fin au programme)\n");
     printf(" 1 en cas de problème syntaxique dans le fichier\n");
@@ -320,7 +320,7 @@ void afficherHelp(){
 }
 
 int main(int argc, char* argv[]){
-    int parse_error, tree_error;
+    int parse_error, sem_error;
     int print = 0;
 
     FILE * file = fopen("obj/_anonymous.asm", "w+");
@@ -338,7 +338,7 @@ int main(int argc, char* argv[]){
         if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--tree") == 0){
             treeOption = 1;
         }
-        else if (strcmp(argv[i], "-s") == 0) {
+        else if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--symtabs") == 0) {
             print = 1;
         }
         else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0){
@@ -346,13 +346,13 @@ int main(int argc, char* argv[]){
             return 0;
         }
         else if (argv[i][0] == '-'){
-            fprintf(stderr, "\n\ttpcas: \"%s\" n'est pas une option valide !\n", argv[i]);
-            fprintf(stderr, "\tEntrez -h ou --help pour voir le manuel d'utilisation de tpcas\n\n");
+            fprintf(stderr, "\n\ttpcc: \"%s\" n'est pas une option valide !\n", argv[i]);
+            fprintf(stderr, "\tEntrez -h ou --help pour voir le manuel d'utilisation de tpcc\n\n");
             return 2;
         }
         else{
-            fprintf(stderr, "\n\ttpcas: La ligne de commande entrée est invalide,\n");
-            fprintf(stderr, "\tEntrez -h ou --help pour voir le manuel d'utilisation de tpcas\n\n");
+            fprintf(stderr, "\n\ttpcc: La ligne de commande entrée est invalide,\n");
+            fprintf(stderr, "\tEntrez -h ou --help pour voir le manuel d'utilisation de tpcc\n\n");
             return 3;
         }
     }
@@ -364,10 +364,10 @@ int main(int argc, char* argv[]){
     }
 
     if (treeOption) printTree(arbre);
-    tree_error = treeToSymbol(arbre, S);
+    sem_error = treeToSymbol(arbre, S);
     
-    if (tree_error) {
-        printf("tree_error : %d\n", tree_error);
+    if (sem_error) {
+        printf("sem_error : 2\n");
         deleteTree(arbre);
         return 2;
     }
@@ -376,8 +376,7 @@ int main(int argc, char* argv[]){
     }
     cToAsm(arbre, file, S);
     deleteTree(arbre);
-    printf("normal return, tree_error : %d, parse_error : %d\n", tree_error, parse_error);
-    return tree_error;
+    return sem_error;
 }
 
 void yyerror(char * s){
