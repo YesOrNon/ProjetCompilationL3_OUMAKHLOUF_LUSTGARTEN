@@ -19,7 +19,7 @@ do
         ((err+=1))
     fi
     echo
-dones
+done
 
 ehco
 echo "Lancement des tests sur les fichiers contenant une erreur syntaxique:"
