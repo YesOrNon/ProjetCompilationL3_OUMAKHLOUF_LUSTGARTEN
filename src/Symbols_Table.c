@@ -430,6 +430,10 @@ int add_symbol(Symbols_Table* sym_table, Symbol symbol) {
         fprintf(stderr, "Line %d -> Semantic Error : identifier \"%s\" already exists\n", err_line, symbol.ident);
         return 1;
     }
+    if (strcmp(symbol.ident, "main") == 0 && symbol.type != FUNCTION) {
+        fprintf(stderr, "Line %d -> Semantic Error : \"main\" cannot be a variable\n", err_line);
+        return 1;
+    }
     if (symbol.size == -8) symbol.deplct = get_last_adress(sym_table) + 8;  // Array without index
     else    symbol.deplct = get_last_adress(sym_table) + symbol.size;
     sym_table->tab[sym_table->index++] = symbol;

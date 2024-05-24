@@ -1,4 +1,4 @@
 int main(void) {
     int getint[7];
     return 7;
-}
+} 
