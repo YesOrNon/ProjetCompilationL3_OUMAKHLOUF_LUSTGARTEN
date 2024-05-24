@@ -178,9 +178,15 @@ int count_args(Node * node, Program_Table * program, Function_Table * function, 
             return -1;
         }
         if (type != function->header->tab[index - i].type) {
-            fprintf(stderr, "Line %d -> Semantic Error : Type of the argument \"%s\" in function \"%s\"\n", err_line, child->data.ident, function->ident);
-            fprintf(stderr, "Line %d -> Expected : %s, Actual : %s\n", err_line, type_to_string(function->header->tab[i].type), type_to_string(type));
-            return -1;
+            if ((type != CHAR && function->header->tab[index - i].type != INT) || (type != INT && function->header->tab[index - i].type != CHAR)) {
+                fprintf(stderr, "Line %d -> Warning : Type of the argument \"%s\" in function \"%s\"\n", err_line, child->data.ident, function->ident);
+                fprintf(stderr, "Line %d -> Expected : %s, Actual : %s\n", err_line, type_to_string(function->header->tab[i].type), type_to_string(type));
+            }
+            else {
+                fprintf(stderr, "Line %d -> Semantic Error : Type of the argument \"%s\" in function \"%s\"\n", err_line, child->data.ident, function->ident);
+                fprintf(stderr, "Line %d -> Expected : %s, Actual : %s\n", err_line, type_to_string(function->header->tab[i].type), type_to_string(type));
+                return -1;
+            }
         }
         else if (function->header->tab[index - i].size == -8) { // array in function header
             if (child->label == num) {
@@ -277,11 +283,7 @@ Type process_ident_expr_type(Program_Table* program, Function_Table* table, Node
         else return DEFAULT;
     }
     else printf("%s ", node->data.ident);   // Rvalue
-    if (strcmp(node->data.ident, "getint") == 0) return INT;
-    else if (strcmp(node->data.ident, "getchar") == 0) return CHAR;
-    else if (strcmp(node->data.ident, "putint") == 0) return VOID_;
-    else if (strcmp(node->data.ident, "putchar") == 0) return VOID_;
-    else if ((FIRSTCHILD(node) && FIRSTCHILD(node)->label == args) || (node->nextSibling && node->nextSibling->label == args)){  // Function call
+    if ((FIRSTCHILD(node) && FIRSTCHILD(node)->label == args) || (node->nextSibling && node->nextSibling->label == args)){  // Function call
         printf("( ");
         Symbol * symbol = find_Symbol(program->globals, node->data.ident);
         if (symbol == NULL || symbol->type != FUNCTION) {
@@ -474,6 +476,10 @@ int add_Function(Node *node, Function_Table * table, Program_Table * program){
     Node * header = FIRSTCHILD(node);
     Node * type = FIRSTCHILD(header);
     Node * ident = SECONDCHILD(header);
+    if (strcmp(ident->data.ident, "getint") == 0 || strcmp(ident->data.ident, "getchar") == 0 || strcmp(ident->data.ident, "putint") == 0 || strcmp(ident->data.ident, "putchar") == 0) {
+        fprintf(stderr, "Line %d -> Semantic Error : Function \"%s\" is a library function\n", err_line, ident->data.ident);
+        return 1;
+    }
     Node * param = THIRDCHILD(header);
     table->type_ret = string_to_type(type->data.comp);
     table->ident = ident->data.ident;
@@ -502,12 +508,110 @@ int add_Function(Node *node, Function_Table * table, Program_Table * program){
     return error;
 }
 
+void add_getint(Program_Table * table) {
+    Symbol symbol = make_symbol("getint", FUNCTION);
+    symbol.size = 0;
+    symbol.deplct = 0;
+    add_symbol(table->globals, symbol);
+
+    Function_Table* new_function = init_Func_table();
+    new_function->type_ret = INT;
+    new_function->ident = "getint";
+    new_function->header = init_Sym_table(); // Initialize the header
+    new_function->body = init_Sym_table(); // Initialize the body
+
+    if (!table->functions) {
+        table->functions = new_function;
+    } else {
+        Function_Table* current = table->functions;
+        while (current->next != NULL) {
+            current = current->next;
+        }
+        current->next = new_function;
+    }
+}
+
+void add_getchar(Program_Table * table) {
+    Symbol symbol = make_symbol("getchar", FUNCTION);
+    symbol.size = 0;
+    symbol.deplct = 0;
+    add_symbol(table->globals, symbol);
+
+    Function_Table* new_function = init_Func_table();
+    new_function->type_ret = CHAR;
+    new_function->ident = "getchar";
+    new_function->header = init_Sym_table(); // Initialize the header
+    new_function->body = init_Sym_table(); // Initialize the body
+
+    if (!table->functions) {
+        table->functions = new_function;
+    } else {
+        Function_Table* current = table->functions;
+        while (current->next != NULL) {
+            current = current->next;
+        }
+        current->next = new_function;
+    }
+}
+
+void add_putchar(Program_Table * table) {
+    Symbol symbol = make_symbol("putchar", FUNCTION);
+    symbol.size = 0;
+    symbol.deplct = 0;
+    add_symbol(table->globals, symbol);
+
+    Function_Table* new_function = init_Func_table();
+    new_function->type_ret = VOID_;
+    new_function->ident = "putchar";
+    new_function->header = init_Sym_table(); // Initialize the header
+    add_symbol(new_function->header, make_symbol("c", CHAR));
+    new_function->body = init_Sym_table(); // Initialize the body
+
+    if (!table->functions) {
+        table->functions = new_function;
+    } else {
+        Function_Table* current = table->functions;
+        while (current->next != NULL) {
+            current = current->next;
+        }
+        current->next = new_function;
+    }
+}
+
+void add_putint(Program_Table * table) {
+    Symbol symbol = make_symbol("putint", FUNCTION);
+    symbol.size = 0;
+    symbol.deplct = 0;
+    add_symbol(table->globals, symbol);
+
+    Function_Table* new_function = init_Func_table();
+    new_function->type_ret = VOID_;
+    new_function->ident = "putint";
+    new_function->header = init_Sym_table(); // Initialize the header
+    add_symbol(new_function->header, make_symbol("n", INT));
+    new_function->body = init_Sym_table(); // Initialize the body
+
+    if (!table->functions) {
+        table->functions = new_function;
+    } else {
+        Function_Table* current = table->functions;
+        while (current->next != NULL) {
+            current = current->next;
+        }
+        current->next = new_function;
+    }
+}
+
 int treeToSymbol(Node *node, Program_Table * table) {
     Type type;
     Function_Table* func = table->functions;
     switch (node->label) {
         case program:
             err_line = node->lineno;
+            add_getint(table);
+            add_getchar(table);
+            add_putchar(table);
+            add_putint(table);
             if (add_Symbols_to_Table(FIRSTCHILD(node), table->globals)) return 1;
             break;
         case fonction:
@@ -531,11 +635,8 @@ int treeToSymbol(Node *node, Program_Table * table) {
         case ident:
             err_line = node->lineno;
             if (!isPresent_all(table, node)) {
-                if (strcmp(node->data.ident, "getint") == 0);
-                else if (strcmp(node->data.ident, "getchar") == 0);
-                else if (strcmp(node->data.ident, "putchar") == 0);
-                else if (strcmp(node->data.ident, "putint") == 0);
-                else    {fprintf(stderr, "Line %d -> Semantic Error : \"%s\" is not defined\n", err_line, node->data.ident); return 1;}
+                fprintf(stderr, "Line %d -> Semantic Error : \"%s\" is not defined\n", err_line, node->data.ident); 
+                return 1;
             }
             break;
         case affectation:

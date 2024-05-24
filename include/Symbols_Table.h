@@ -172,6 +172,18 @@ int add_Symbols_to_Table(Node *node, Symbols_Table * table);
 */
 int add_Function(Node *node, Function_Table * table, Program_Table * program);
 
+/* Add the function getint to the program table */
+void add_getint(Program_Table * table);
+
+/* Add the function getchar to the program table */
+void add_getchar(Program_Table * table);
+
+/* Add the function putint to the program table */
+void add_putint(Program_Table * table);
+
+/* Add the function putchar to the program table */
+void add_putchar(Program_Table * table);
+
 /* Create the symbol table of a tree 
  * Returns 1 if a problem occured, 0 otherwise
 */

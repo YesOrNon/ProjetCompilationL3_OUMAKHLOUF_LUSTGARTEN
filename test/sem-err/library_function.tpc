@@ -1,4 +1,4 @@
-char getint(void) {
+char getchar(void) {
     return 'a';
 }
 
